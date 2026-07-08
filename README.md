@@ -36,7 +36,7 @@ same service layer — business logic is never duplicated between them.
 | Database   | SQLite locally; MySQL 8 via Docker                          |
 | Keys       | UUID v4 primary keys + soft deletes + audit columns         |
 | Frontend   | Blade + Bootstrap 5, Tom Select & Bootstrap Icons (CDN)     |
-| Cache      | Database/file locally; Redis in Docker                      |
+| Cache      | Redis (search results, 60s TTL + version invalidation)      |
 | Container  | Docker Compose (PHP-FPM + Nginx + MySQL + Redis)            |
 | Code style | PSR-12 via Laravel Pint                                     |
 
@@ -110,7 +110,14 @@ are orphaned and recomputed on the next request (they also expire naturally on t
 
 ## Getting started — Normal (no Docker)
 
-**Requirements:** PHP 8.3+, Composer 2, SQLite (default) or MySQL.
+**Requirements:** PHP 8.3+, Composer 2, SQLite (default) or MySQL, **Redis**.
+
+Start Redis locally (pick one):
+
+```bash
+docker run -d --name terrastay-redis -p 6379:6379 redis:alpine
+# or: docker compose up -d redis   (uses host port 6380 — set REDIS_PORT=6380)
+```
 
 ```bash
 composer install
@@ -119,6 +126,8 @@ php artisan key:generate
 php artisan migrate:fresh --seed
 php artisan serve
 ```
+
+`.env` defaults to `CACHE_STORE=redis` with `REDIS_CLIENT=predis` (no PHP extension required).
 
 Open http://localhost:8000 and sign in with the seeded admin:
 
@@ -160,6 +169,7 @@ DB_USERNAME=hotel
 DB_PASSWORD=secret
 CACHE_STORE=redis
 REDIS_HOST=redis
+REDIS_CLIENT=predis
 ```
 
 **2 — Build and start**

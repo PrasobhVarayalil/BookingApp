@@ -1,5 +1,8 @@
 .PHONY: build up down setup migrate seed test pint sh
 
+redis:
+	docker compose up -d redis
+
 ## Build the app image
 build:
 	docker compose build
