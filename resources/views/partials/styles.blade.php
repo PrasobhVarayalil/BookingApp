@@ -107,7 +107,6 @@
     .form-control:focus, .form-select:focus { border-color: var(--hb-primary-2); box-shadow: 0 0 0 .22rem var(--hb-ring); background: #fff; }
     .form-label { font-weight: 600; font-size: .8rem; color: #3d4842; margin-bottom: .4rem; }
     .hb-required { color: #dc3545; margin-left: 2px; font-weight: 700; }
-    .hb-filter-required { position: absolute; left: 22px; top: 5px; color: #dc3545; font-size: .62rem; font-weight: 700; line-height: 1; pointer-events: none; }
     .form-text { font-size: .76rem; }
     .invalid-feedback { font-size: .76rem; }
     .input-icon { position: relative; }
