@@ -1,0 +1,14 @@
+@props([
+    'action',
+    'confirm',
+    'label' => null,
+    'icon' => 'trash',
+])
+
+<form method="POST" action="{{ $action }}" class="d-inline" onsubmit="return confirm(@js($confirm))">
+    @csrf
+    @method('DELETE')
+    <button type="submit" class="btn btn-sm btn-outline-danger">
+        <i class="bi bi-{{ $icon }}@if($label) me-1@endif"></i>@if($label){{ $label }}@endif
+    </button>
+</form>

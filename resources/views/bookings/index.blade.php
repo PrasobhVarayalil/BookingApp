@@ -77,17 +77,14 @@
                         </td>
                         <td class="text-end">
                             @if ($booking->status === \App\Models\Booking::STATUS_CONFIRMED)
-                                <form method="POST" action="{{ route('bookings.destroy', $booking) }}" class="d-inline" onsubmit="return confirm('Cancel this booking?')">
-                                    @csrf @method('DELETE')
-                                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg me-1"></i>Cancel</button>
-                                </form>
+                                <x-delete-form :action="route('bookings.destroy', $booking)" confirm="Cancel this booking?" label="Cancel" icon="x-lg" />
                             @else
                                 <span class="text-muted small">—</span>
                             @endif
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="7"><div class="hb-empty"><i class="bi bi-calendar-x"></i>No bookings yet.</div></td></tr>
+                    <tr><td colspan="7"><x-empty-state icon="calendar-x" message="No bookings yet." /></td></tr>
                 @endforelse
             </tbody>
         </table>

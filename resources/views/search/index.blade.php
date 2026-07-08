@@ -4,39 +4,20 @@
 @section('crumb', 'Find rooms')
 
 @section('content')
-<div class="card hb-hero mb-4">
-    <div class="card-body p-4 position-relative" style="z-index:1">
-        <h2 class="h5 fw-bold mb-1"><i class="bi bi-compass me-2"></i>Where to next?</h2>
-        <p class="opacity-75 mb-3">Search real-time availability by city and dates.</p>
-        <form method="POST" action="{{ route('search.run') }}" class="row g-2">
-            @csrf
-            <div class="col-md-4">
-                @php($selCity = old('city', $filters['city'] ?? ''))
-                <select name="city" class="form-select @error('city') is-invalid @enderror" required>
-                    <option value="">Choose a city</option>
-                    @foreach ($cities as $city)
-                        <option value="{{ $city }}" @selected($selCity === $city)>{{ $city }}</option>
-                    @endforeach
-                </select>
-                @error('city')<div class="text-warning small mt-1">{{ $message }}</div>@enderror
-            </div>
-            <div class="col-md-3 col-6">
-                <input type="date" name="checkin_date" value="{{ old('checkin_date', $filters['checkin_date'] ?? '') }}" class="form-control @error('checkin_date') is-invalid @enderror" required>
-                @error('checkin_date')<div class="text-warning small mt-1">{{ $message }}</div>@enderror
-            </div>
-            <div class="col-md-3 col-6">
-                <input type="date" name="checkout_date" value="{{ old('checkout_date', $filters['checkout_date'] ?? '') }}" class="form-control @error('checkout_date') is-invalid @enderror" required>
-                @error('checkout_date')<div class="text-warning small mt-1">{{ $message }}</div>@enderror
-            </div>
-            <div class="col-md-1 col-6">
-                <input type="number" name="guests" min="1" value="{{ old('guests', $filters['guests'] ?? 1) }}" class="form-control @error('guests') is-invalid @enderror" title="Guests" required>
-            </div>
-            <div class="col-md-1 col-6 d-grid">
-                <button class="btn btn-light fw-semibold"><i class="bi bi-search"></i></button>
-            </div>
-        </form>
-    </div>
-</div>
+<x-hero-banner
+    title="Where to next?"
+    subtitle="Search real-time availability by city and dates."
+/>
+
+<x-filter-toolbar method="POST" :action="route('search.run')" class="mb-2">
+    @include('search.partials.filters')
+</x-filter-toolbar>
+
+@include('partials.form-errors')
+
+@if (! $errors->any())
+    <div class="mb-3"></div>
+@endif
 
 @if ($payload)
     <div class="d-flex align-items-center gap-2 mb-3 text-muted">
@@ -90,9 +71,9 @@
             </div>
         </div>
     @empty
-        <div class="card"><div class="hb-empty"><i class="bi bi-emoji-frown"></i>No rooms available for these dates. Try different dates or a nearby city.</div></div>
+        <div class="card"><x-empty-state icon="emoji-frown" message="No rooms available for these dates. Try different dates or a nearby city." /></div>
     @endforelse
 @else
-    <div class="card"><div class="hb-empty"><i class="bi bi-search"></i>Enter a city and dates to see available rooms.</div></div>
+    <div class="card"><x-empty-state icon="search" message="Enter a city and dates to see available rooms." /></div>
 @endif
 @endsection

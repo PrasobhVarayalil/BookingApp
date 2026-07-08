@@ -4,31 +4,15 @@
 @section('crumb', 'Inventory')
 
 @section('content')
-<div class="hb-toolbar mb-3">
-    <form method="GET" class="hb-filters">
-        <div class="hb-filter-field">
-            <i class="bi bi-search"></i>
-            <input type="text" name="search" value="{{ $filters['search'] }}" class="form-control form-control-sm" placeholder="Search type or hotel" style="min-width:200px">
-        </div>
-        <div class="hb-filter-field">
-            <i class="bi bi-buildings"></i>
-            <select name="hotel" class="form-select form-select-sm">
-                <option value="">All hotels</option>
-                @foreach ($hotels as $hotel)
-                    <option value="{{ $hotel->id }}" @selected($filters['hotel'] === $hotel->id)>{{ $hotel->name }}</option>
-                @endforeach
-            </select>
-        </div>
-        <button class="btn btn-sm btn-soft"><i class="bi bi-funnel me-1"></i>Filter</button>
-        @if ($filters['search'] || $filters['hotel'])
-            <a href="{{ route('rooms.index') }}" class="btn btn-sm btn-link text-decoration-none px-2">Clear</a>
-        @endif
-    </form>
+<x-filter-toolbar>
+    @include('rooms.partials.filters')
 
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createRoom">
-        <i class="bi bi-plus-lg me-1"></i>Add room type
-    </button>
-</div>
+    <x-slot:actions>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createRoom">
+            <i class="bi bi-plus-lg me-1"></i>Add room type
+        </button>
+    </x-slot:actions>
+</x-filter-toolbar>
 
 <div class="card">
     <div class="table-responsive">
@@ -67,35 +51,21 @@
                         </td>
                         <td class="text-end text-nowrap">
                             <button class="btn btn-sm btn-soft" data-bs-toggle="modal" data-bs-target="#editRoom{{ $loop->index }}"><i class="bi bi-pencil"></i></button>
-                            <form method="POST" action="{{ route('rooms.destroy', $roomType) }}" class="d-inline" onsubmit="return confirm('Delete {{ $roomType->name }}?')">
-                                @csrf @method('DELETE')
-                                <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                            </form>
+                            <x-delete-form :action="route('rooms.destroy', $roomType)" :confirm="'Delete '.$roomType->name.'?'" />
                         </td>
                     </tr>
 
-                    <div class="modal fade" id="editRoom{{ $loop->index }}" tabindex="-1">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content">
-                                <form method="POST" action="{{ route('rooms.update', $roomType) }}">
-                                    @csrf @method('PUT')
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">Edit room type</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                    </div>
-                                    <div class="modal-body">
-                                        @include('rooms.partials.fields', ['roomType' => $roomType])
-                                    </div>
-                                    <div class="modal-footer">
-                                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                                        <button type="submit" class="btn btn-primary">Save changes</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
+                    <x-modal-form
+                        :id="'editRoom'.$loop->index"
+                        title="Edit room type"
+                        :action="route('rooms.update', $roomType)"
+                        method="PUT"
+                        submit="Save changes"
+                    >
+                        @include('rooms.partials.fields', ['roomType' => $roomType])
+                    </x-modal-form>
                 @empty
-                    <tr><td colspan="6"><div class="hb-empty"><i class="bi bi-door-open"></i>No room types found.</div></td></tr>
+                    <tr><td colspan="6"><x-empty-state icon="door-open" message="No room types found." /></td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -105,26 +75,9 @@
     @endif
 </div>
 
-<div class="modal fade" id="createRoom" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <form method="POST" action="{{ route('rooms.store') }}">
-                @csrf
-                <div class="modal-header">
-                    <h5 class="modal-title">Add room type</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    @include('rooms.partials.fields', ['roomType' => null])
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save room type</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+<x-modal-form id="createRoom" title="Add room type" :action="route('rooms.store')" submit="Save room type">
+    @include('rooms.partials.fields', ['roomType' => null])
+</x-modal-form>
 
 @if ($errors->any() && ! old('_method'))
     @push('scripts')

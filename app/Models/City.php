@@ -4,14 +4,10 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Concerns\HasVersion4Uuids;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class City extends Model
+class City extends AppModel
 {
-    use HasVersion4Uuids;
-
     protected $fillable = ['country_id', 'name'];
 
     /**
