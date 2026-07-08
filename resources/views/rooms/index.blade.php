@@ -50,6 +50,7 @@
                             </div>
                         </td>
                         <td class="text-end text-nowrap">
+                            <a href="{{ route('rooms.show', $roomType) }}" class="btn btn-sm btn-soft"><i class="bi bi-eye"></i></a>
                             <button class="btn btn-sm btn-soft" data-bs-toggle="modal" data-bs-target="#editRoom{{ $loop->index }}"><i class="bi bi-pencil"></i></button>
                             <x-delete-form :action="route('rooms.destroy', $roomType)" :confirm="'Delete '.$roomType->name.'?'" />
                         </td>

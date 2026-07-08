@@ -65,6 +65,16 @@ class BookingController extends Controller
         ]);
     }
 
+    public function show(Booking $booking): View
+    {
+        $booking->load(['roomType.hotel', 'roomUnit', 'creator', 'updater']);
+
+        return view('bookings.show', [
+            'booking' => $booking,
+            'nights' => $booking->checkin_date->diffInDays($booking->checkout_date),
+        ]);
+    }
+
     public function store(StoreBookingRequest $request): RedirectResponse
     {
         try {

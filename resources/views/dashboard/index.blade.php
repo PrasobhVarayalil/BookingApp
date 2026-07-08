@@ -12,7 +12,7 @@
         </div>
         <div class="d-flex gap-2 mt-3 mt-md-0">
             <a href="{{ route('search.index') }}" class="btn btn-light fw-semibold"><i class="bi bi-search me-1"></i>Search availability</a>
-            <a href="{{ route('bookings.index') }}" class="btn btn-outline-light text-white"><i class="bi bi-plus-circle me-1"></i>New booking</a>
+            <a href="{{ route('bookings.index') }}" class="btn btn-hero-ghost fw-semibold"><i class="bi bi-plus-circle me-1"></i>New booking</a>
         </div>
     </div>
 </div>
@@ -38,6 +38,63 @@
             </a>
         </div>
     @endforeach
+</div>
+
+<div class="row g-3 mt-1">
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-graph-up-arrow me-2"></i>Bookings &amp; revenue</span>
+                <span class="text-muted small">Last 6 months</span>
+            </div>
+            <div class="card-body">
+                <canvas id="trendChart" height="110"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-pie-chart me-2"></i>Booking status</div>
+            <div class="card-body d-flex flex-column">
+                <div class="flex-grow-1 d-flex align-items-center justify-content-center">
+                    <canvas id="statusChart" height="200"></canvas>
+                </div>
+                <div class="d-flex justify-content-between align-items-center pt-3 mt-2 border-top" style="border-color:var(--hb-border)!important">
+                    <span class="text-muted"><i class="bi bi-building-check me-2"></i>Occupancy today</span>
+                    <span class="hb-chip hb-chip-green">{{ $stats['occupancy'] }}%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mt-1">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-trophy me-2"></i>Top hotels by bookings</div>
+            <div class="card-body">
+                @if (count($charts['topHotels']['labels']))
+                    <canvas id="topHotelsChart" height="150"></canvas>
+                @else
+                    <x-empty-state icon="trophy" message="No confirmed bookings yet." />
+                @endif
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-geo-alt me-2"></i>Bookings by city</div>
+            <div class="card-body">
+                @if (count($charts['byCity']['labels']))
+                    <canvas id="cityChart" height="150"></canvas>
+                @else
+                    <x-empty-state icon="geo-alt" message="No confirmed bookings yet." />
+                @endif
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="row g-3 mt-1">
@@ -97,4 +154,130 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+(() => {
+    const charts = @json($charts);
+    const teal = '#0f766e';
+    const terracotta = '#ea7a3b';
+    const gold = '#c79a3a';
+    const muted = '#77837c';
+    const grid = 'rgba(31,42,38,.08)';
+
+    Chart.defaults.font.family = "'Plus Jakarta Sans', system-ui, sans-serif";
+    Chart.defaults.color = muted;
+
+    const trend = document.getElementById('trendChart');
+    if (trend) {
+        new Chart(trend, {
+            data: {
+                labels: charts.trend.labels,
+                datasets: [
+                    {
+                        type: 'bar',
+                        label: 'Bookings',
+                        data: charts.trend.bookings,
+                        backgroundColor: 'rgba(15,118,110,.85)',
+                        borderRadius: 6,
+                        yAxisID: 'y',
+                        order: 2,
+                    },
+                    {
+                        type: 'line',
+                        label: 'Revenue ($)',
+                        data: charts.trend.revenue,
+                        borderColor: terracotta,
+                        backgroundColor: 'rgba(234,122,59,.15)',
+                        borderWidth: 2,
+                        tension: .35,
+                        fill: true,
+                        yAxisID: 'y1',
+                        order: 1,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } },
+                scales: {
+                    y: { beginAtZero: true, position: 'left', grid: { color: grid }, ticks: { precision: 0 } },
+                    y1: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: (v) => '$' + v } },
+                    x: { grid: { display: false } },
+                },
+            },
+        });
+    }
+
+    const status = document.getElementById('statusChart');
+    if (status) {
+        new Chart(status, {
+            type: 'doughnut',
+            data: {
+                labels: ['Confirmed', 'Cancelled'],
+                datasets: [{
+                    data: [charts.status.confirmed, charts.status.cancelled],
+                    backgroundColor: [teal, terracotta],
+                    borderWidth: 0,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } },
+            },
+        });
+    }
+
+    const topHotels = document.getElementById('topHotelsChart');
+    if (topHotels) {
+        new Chart(topHotels, {
+            type: 'bar',
+            data: {
+                labels: charts.topHotels.labels,
+                datasets: [{
+                    label: 'Bookings',
+                    data: charts.topHotels.data,
+                    backgroundColor: 'rgba(15,118,110,.85)',
+                    borderRadius: 6,
+                }],
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { x: { beginAtZero: true, grid: { color: grid }, ticks: { precision: 0 } }, y: { grid: { display: false } } },
+            },
+        });
+    }
+
+    const city = document.getElementById('cityChart');
+    if (city) {
+        new Chart(city, {
+            type: 'bar',
+            data: {
+                labels: charts.byCity.labels,
+                datasets: [{
+                    label: 'Bookings',
+                    data: charts.byCity.data,
+                    backgroundColor: [teal, terracotta, gold, '#1d4ed8', '#be123c'],
+                    borderRadius: 6,
+                }],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, grid: { color: grid }, ticks: { precision: 0 } }, x: { grid: { display: false } } },
+            },
+        });
+    }
+})();
+</script>
+@endpush
 @endsection

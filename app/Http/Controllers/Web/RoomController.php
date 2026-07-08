@@ -35,6 +35,21 @@ class RoomController extends Controller
         ]);
     }
 
+    public function show(RoomType $roomType): View
+    {
+        $roomType->load([
+            'hotel',
+            'units' => fn ($q) => $q->withCount('bookings'),
+            'bookings' => fn ($q) => $q->with('roomUnit')->latest('checkin_date')->limit(20),
+            'creator',
+            'updater',
+        ]);
+
+        return view('rooms.show', [
+            'roomType' => $roomType,
+        ]);
+    }
+
     public function store(StoreRoomTypeRequest $request): RedirectResponse
     {
         $numbers = $request->unitNumbers();

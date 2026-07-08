@@ -83,6 +83,9 @@
     .btn-primary:hover, .btn-primary:focus { filter: brightness(1.06); background: linear-gradient(135deg, var(--hb-primary), var(--hb-primary-2)); }
     .btn-soft { background: #eaf1ef; color: var(--hb-primary); border: none; }
     .btn-soft:hover { background: #dcebe8; color: var(--hb-primary); }
+    /* Outline button on the dark hero band — stays readable on hover */
+    .btn-hero-ghost { background: rgba(255, 255, 255, .12); color: #fff; border: 1px solid rgba(255, 255, 255, .55); }
+    .btn-hero-ghost:hover, .btn-hero-ghost:focus { background: #fff; color: var(--hb-primary); border-color: #fff; }
     .btn-outline-danger { border-radius: 999px; }
     .btn-light { background: #f1ede4; border: 1px solid var(--hb-border); }
 
@@ -103,6 +106,8 @@
     .form-control, .form-select { border-radius: 12px; border-color: var(--hb-border); padding: .5rem .8rem; background: #fdfcf9; font-size: .875rem; }
     .form-control:focus, .form-select:focus { border-color: var(--hb-primary-2); box-shadow: 0 0 0 .22rem var(--hb-ring); background: #fff; }
     .form-label { font-weight: 600; font-size: .8rem; color: #3d4842; margin-bottom: .4rem; }
+    .hb-required { color: #dc3545; margin-left: 2px; font-weight: 700; }
+    .hb-filter-required { position: absolute; left: 22px; top: 5px; color: #dc3545; font-size: .62rem; font-weight: 700; line-height: 1; pointer-events: none; }
     .form-text { font-size: .76rem; }
     .invalid-feedback { font-size: .76rem; }
     .input-icon { position: relative; }
@@ -180,6 +185,14 @@
 
     .hb-empty { text-align: center; padding: 54px 20px; color: var(--hb-muted); }
     .hb-empty i { font-size: 2.6rem; opacity: .5; display: block; margin-bottom: 10px; }
+
+    /* Detail (show) pages */
+    .hb-detail-row { display: flex; gap: 16px; padding: .6rem 0; border-bottom: 1px dashed var(--hb-border); }
+    .hb-detail-row:last-child { border-bottom: none; }
+    .hb-detail-label { flex: 0 0 150px; color: var(--hb-muted); font-size: .82rem; font-weight: 600; }
+    .hb-detail-value { flex: 1; font-weight: 600; font-size: .9rem; }
+    .hb-detail-head { display: flex; align-items: center; gap: 16px; }
+    .hb-detail-head .hb-thumb { width: 58px; height: 58px; flex: 0 0 58px; font-size: 1.4rem; }
 
     .alert { border: none; border-radius: 14px; box-shadow: var(--hb-shadow-sm); }
     .page-link { border-radius: 10px !important; margin: 0 2px; border-color: var(--hb-border); color: var(--hb-primary); }

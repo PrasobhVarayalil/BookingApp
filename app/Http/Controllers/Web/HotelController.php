@@ -39,6 +39,18 @@ class HotelController extends Controller
         ]);
     }
 
+    public function show(Hotel $hotel): View
+    {
+        $hotel->load(['roomTypes' => fn ($q) => $q->withCount(['units', 'bookings']), 'creator', 'updater']);
+
+        return view('hotels.show', [
+            'hotel' => $hotel,
+            'roomsCount' => $hotel->roomTypes->count(),
+            'unitsCount' => $hotel->roomTypes->sum('units_count'),
+            'bookingsCount' => $hotel->roomTypes->sum('bookings_count'),
+        ]);
+    }
+
     public function store(StoreHotelRequest $request): RedirectResponse
     {
         $this->hotels->create($request->validated());

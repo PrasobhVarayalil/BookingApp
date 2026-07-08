@@ -3,13 +3,13 @@
 @php($selCity = old('city', $h?->city))
 @php($currentCities = optional($countries->firstWhere('name', $selCountry))->cities ?? collect())
 <div class="mb-3">
-    <label class="form-label">Name</label>
+    <x-form-label required>Name</x-form-label>
     <input type="text" name="name" value="{{ old('name', $h?->name) }}" class="form-control @error('name') is-invalid @enderror" required>
     @error('name')<div class="invalid-feedback">{{ $message }}</div>@enderror
 </div>
 <div class="row g-3">
     <div class="col-md-6">
-        <label class="form-label">Country</label>
+        <x-form-label required>Country</x-form-label>
         <select name="country" class="form-select js-country @error('country') is-invalid @enderror" required>
             <option value="">Select a country</option>
             @foreach ($countries as $country)
@@ -19,7 +19,7 @@
         @error('country')<div class="invalid-feedback">{{ $message }}</div>@enderror
     </div>
     <div class="col-md-6">
-        <label class="form-label">City</label>
+        <x-form-label required>City</x-form-label>
         <select name="city" class="form-select js-city @error('city') is-invalid @enderror" required>
             <option value="">Select a city</option>
             @foreach ($currentCities as $city)
@@ -30,7 +30,7 @@
     </div>
 </div>
 <div class="mb-3 mt-3">
-    <label class="form-label">Rating (1-5)</label>
+    <x-form-label required>Rating (1-5)</x-form-label>
     <input type="number" name="rating" min="1" max="5" value="{{ old('rating', $h?->rating ?? 3) }}" class="form-control @error('rating') is-invalid @enderror" required>
     @error('rating')<div class="invalid-feedback">{{ $message }}</div>@enderror
 </div>

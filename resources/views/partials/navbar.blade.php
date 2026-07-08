@@ -5,6 +5,7 @@
         ['rooms.index', 'Room Types', 'bi-door-open', 'rooms.*'],
         ['bookings.index', 'Bookings', 'bi-calendar-check', 'bookings.*'],
         ['search.index', 'Search', 'bi-search', 'search.*'],
+        ['activity.index', 'Activity', 'bi-clock-history', 'activity.*'],
     ];
     $user = auth()->user();
     $initials = collect(explode(' ', trim($user?->name ?? 'A')))->filter()->map(fn ($p) => mb_substr($p, 0, 1))->take(2)->implode('');

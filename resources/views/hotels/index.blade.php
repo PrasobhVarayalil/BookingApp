@@ -39,6 +39,7 @@
                         <td class="hb-star">{{ str_repeat('★', $hotel->rating) }}<span class="text-muted">{{ str_repeat('☆', 5 - $hotel->rating) }}</span></td>
                         <td><span class="badge text-bg-light">{{ $hotel->room_types_count }} types</span></td>
                         <td class="text-end text-nowrap">
+                            <a href="{{ route('hotels.show', $hotel) }}" class="btn btn-sm btn-soft"><i class="bi bi-eye"></i></a>
                             <button class="btn btn-sm btn-soft" data-bs-toggle="modal" data-bs-target="#editHotel{{ $loop->index }}"><i class="bi bi-pencil"></i></button>
                             <x-delete-form :action="route('hotels.destroy', $hotel)" :confirm="'Delete '.$hotel->name.'?'" />
                         </td>

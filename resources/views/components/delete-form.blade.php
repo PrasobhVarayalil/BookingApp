@@ -9,6 +9,6 @@
     @csrf
     @method('DELETE')
     <button type="submit" class="btn btn-sm btn-outline-danger">
-        <i class="bi bi-{{ $icon }}@if($label) me-1@endif"></i>@if($label){{ $label }}@endif
+        <i class="bi bi-{{ $icon }} {{ $label ? 'me-1' : '' }}"></i>{{ $label }}
     </button>
 </form>

@@ -75,11 +75,10 @@
                                 <span class="hb-chip hb-chip-amber"><i class="bi bi-x-circle"></i>Cancelled</span>
                             @endif
                         </td>
-                        <td class="text-end">
+                        <td class="text-end text-nowrap">
+                            <a href="{{ route('bookings.show', $booking) }}" class="btn btn-sm btn-soft"><i class="bi bi-eye"></i></a>
                             @if ($booking->status === \App\Models\Booking::STATUS_CONFIRMED)
                                 <x-delete-form :action="route('bookings.destroy', $booking)" confirm="Cancel this booking?" label="Cancel" icon="x-lg" />
-                            @else
-                                <span class="text-muted small">—</span>
                             @endif
                         </td>
                     </tr>
@@ -118,7 +117,7 @@
                                 <div class="hb-section-title"><i class="bi bi-door-open"></i>Room &amp; stay</div>
                                 <div class="row g-3">
                                     <div class="col-md-6">
-                                        <label class="form-label">Hotel</label>
+                                        <x-form-label required>Hotel</x-form-label>
                                         <select id="hotelSelect" class="form-select" required>
                                             <option value="">Select a hotel</option>
                                             @foreach ($hotelOptions as $hotel)
@@ -127,24 +126,24 @@
                                         </select>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Room type</label>
+                                        <x-form-label required>Room type</x-form-label>
                                         <select name="room_type_id" id="roomTypeSelect" class="form-select @error('room_type_id') is-invalid @enderror" required>
                                             <option value="">Select a room type</option>
                                         </select>
                                         @error('room_type_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Check-in</label>
+                                        <x-form-label required>Check-in</x-form-label>
                                         <input type="date" name="checkin_date" id="checkinDate" min="{{ now()->toDateString() }}" value="{{ old('checkin_date', $prefill['checkin_date'] ?? '') }}" class="form-control @error('checkin_date') is-invalid @enderror" required>
                                         @error('checkin_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Check-out</label>
+                                        <x-form-label required>Check-out</x-form-label>
                                         <input type="date" name="checkout_date" id="checkoutDate" min="{{ now()->addDay()->toDateString() }}" value="{{ old('checkout_date', $prefill['checkout_date'] ?? '') }}" class="form-control @error('checkout_date') is-invalid @enderror" required>
                                         @error('checkout_date')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Guests <span class="text-muted fw-normal" id="guestsHint"></span></label>
+                                        <x-form-label required>Guests <span class="text-muted fw-normal" id="guestsHint"></span></x-form-label>
                                         <input type="number" min="1" name="guests" id="guestsInput" value="{{ old('guests', $prefill['guests'] ?? 1) }}" class="form-control @error('guests') is-invalid @enderror" required>
                                         <div class="invalid-feedback" id="guestsError">@error('guests'){{ $message }}@enderror</div>
                                     </div>
@@ -156,17 +155,17 @@
                                 <div class="hb-section-title"><i class="bi bi-person-badge"></i>Guest details</div>
                                 <div class="row g-3">
                                     <div class="col-md-6">
-                                        <label class="form-label">Guest name</label>
+                                        <x-form-label required>Guest name</x-form-label>
                                         <input type="text" name="guest_name" value="{{ old('guest_name') }}" class="form-control @error('guest_name') is-invalid @enderror" required>
                                         @error('guest_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Guest email</label>
+                                        <x-form-label required>Guest email</x-form-label>
                                         <input type="email" name="guest_email" value="{{ old('guest_email') }}" class="form-control @error('guest_email') is-invalid @enderror" required>
                                         @error('guest_email')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                     </div>
                                     <div class="col-md-12">
-                                        <label class="form-label">Guest phone <span class="text-muted fw-normal">(optional)</span></label>
+                                        <x-form-label>Guest phone <span class="text-muted fw-normal">(optional)</span></x-form-label>
                                         <input type="text" name="guest_phone" value="{{ old('guest_phone') }}" class="form-control @error('guest_phone') is-invalid @enderror">
                                         @error('guest_phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                     </div>
