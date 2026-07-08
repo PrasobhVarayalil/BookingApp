@@ -23,10 +23,10 @@ class Hotel extends AppModel
     }
 
     /**
-     * @return HasMany<Room, $this>
+     * @return HasMany<RoomType, $this>
      */
-    public function rooms(): HasMany
+    public function roomTypes(): HasMany
     {
-        return $this->hasMany(Room::class);
+        return $this->hasMany(RoomType::class);
     }
 }

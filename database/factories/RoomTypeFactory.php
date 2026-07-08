@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Models\Hotel;
-use App\Models\Room;
+use App\Models\RoomType;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<Room>
+ * @extends Factory<RoomType>
  */
-class RoomFactory extends Factory
+class RoomTypeFactory extends Factory
 {
-    protected $model = Room::class;
+    protected $model = RoomType::class;
 
     public function definition(): array
     {
@@ -22,7 +22,6 @@ class RoomFactory extends Factory
             'name' => $this->faker->randomElement(['Standard Twin', 'Deluxe King', 'Executive Suite', 'Family Room']),
             'price_per_night' => $this->faker->randomFloat(2, 60, 500),
             'max_occupancy' => $this->faker->numberBetween(1, 4),
-            'total_rooms' => $this->faker->numberBetween(1, 10),
         ];
     }
 

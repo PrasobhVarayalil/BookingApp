@@ -6,88 +6,80 @@ namespace Tests\Unit;
 
 use App\Models\Booking;
 use App\Services\BookingService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Collection;
+use Tests\Concerns\CreatesRoomInventory;
 use Tests\TestCase;
 
 class AvailabilityTest extends TestCase
 {
+    use CreatesRoomInventory;
+    use RefreshDatabase;
+
     private function service(): BookingService
     {
         return app(BookingService::class);
     }
 
-    /**
-     * @param  list<array{0: string, 1: string}>  $ranges
-     * @return Collection<int, Booking>
-     */
-    private function bookings(array $ranges): Collection
-    {
-        return collect($ranges)->map(fn (array $r) => new Booking([
-            'checkin_date' => $r[0],
-            'checkout_date' => $r[1],
-        ]));
-    }
-
     public function test_no_bookings_leaves_full_inventory(): void
     {
-        $units = $this->service()->availableUnits(
-            5,
-            collect(),
+        $roomType = $this->roomTypeWithUnits(5);
+
+        $units = $this->service()->availableUnitsForStay(
+            $roomType,
             Carbon::parse('2026-07-01'),
             Carbon::parse('2026-07-04'),
         );
 
-        $this->assertSame(5, $units);
+        $this->assertCount(5, $units);
     }
 
     public function test_fully_booked_range_leaves_nothing(): void
     {
-        $units = $this->service()->availableUnits(
-            2,
-            $this->bookings([['2026-07-01', '2026-07-04'], ['2026-07-01', '2026-07-04']]),
+        $roomType = $this->roomTypeWithUnits(1);
+        $unit = $roomType->units->first();
+
+        Booking::factory()->forType($roomType, $unit)->stay('2026-07-01', '2026-07-04')->create();
+
+        $units = $this->service()->availableUnitsForStay(
+            $roomType,
             Carbon::parse('2026-07-01'),
             Carbon::parse('2026-07-04'),
         );
 
-        $this->assertSame(0, $units);
+        $this->assertCount(0, $units);
     }
 
-    public function test_units_are_capped_by_the_busiest_night(): void
+    public function test_partial_bookings_on_other_units_still_leave_a_free_unit(): void
     {
-        // Only one booking covers a single night of the stay.
-        $units = $this->service()->availableUnits(
-            3,
-            $this->bookings([['2026-07-01', '2026-07-02']]),
+        $roomType = $this->roomTypeWithUnits(3);
+
+        Booking::factory()->forType($roomType, $roomType->units[0])->stay('2026-07-01', '2026-07-02')->create();
+        Booking::factory()->forType($roomType, $roomType->units[1])->stay('2026-07-02', '2026-07-04')->create();
+
+        $units = $this->service()->availableUnitsForStay(
+            $roomType,
             Carbon::parse('2026-07-01'),
             Carbon::parse('2026-07-04'),
         );
 
-        $this->assertSame(2, $units);
+        $this->assertCount(1, $units);
+        $this->assertSame('103', $units->first()?->room_number);
     }
 
     public function test_checkout_day_is_not_counted_as_occupied(): void
     {
-        // Booking ends the morning our stay begins -> no overlap.
-        $units = $this->service()->availableUnits(
-            1,
-            $this->bookings([['2026-06-29', '2026-07-01']]),
+        $roomType = $this->roomTypeWithUnits(1);
+        $unit = $roomType->units->first();
+
+        Booking::factory()->forType($roomType, $unit)->stay('2026-06-29', '2026-07-01')->create();
+
+        $units = $this->service()->availableUnitsForStay(
+            $roomType,
             Carbon::parse('2026-07-01'),
             Carbon::parse('2026-07-03'),
         );
 
-        $this->assertSame(1, $units);
-    }
-
-    public function test_availability_never_goes_negative(): void
-    {
-        $units = $this->service()->availableUnits(
-            1,
-            $this->bookings([['2026-07-01', '2026-07-04'], ['2026-07-01', '2026-07-04']]),
-            Carbon::parse('2026-07-01'),
-            Carbon::parse('2026-07-04'),
-        );
-
-        $this->assertSame(0, $units);
+        $this->assertCount(1, $units);
     }
 }

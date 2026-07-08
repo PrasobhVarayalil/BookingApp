@@ -17,7 +17,7 @@ class AuthTest extends TestCase
     private function admin(): User
     {
         return User::factory()->create([
-            'email' => 'admin@example.com',
+            'email' => 'admin@terrastay.com',
             'password' => Hash::make('password'),
         ]);
     }
@@ -26,7 +26,7 @@ class AuthTest extends TestCase
     {
         $this->admin();
 
-        $this->post('/login', ['email' => 'admin@example.com', 'password' => 'password'])
+        $this->post('/login', ['email' => 'admin@terrastay.com', 'password' => 'password'])
             ->assertRedirect('/dashboard');
 
         $this->assertAuthenticated();
@@ -37,7 +37,7 @@ class AuthTest extends TestCase
         $this->admin();
 
         $this->from('/login')
-            ->post('/login', ['email' => 'admin@example.com', 'password' => 'nope'])
+            ->post('/login', ['email' => 'admin@terrastay.com', 'password' => 'nope'])
             ->assertRedirect('/login')
             ->assertSessionHasErrors('email');
 
@@ -53,7 +53,7 @@ class AuthTest extends TestCase
     {
         $this->admin();
 
-        $this->postJson('/api/login', ['email' => 'admin@example.com', 'password' => 'password'])
+        $this->postJson('/api/login', ['email' => 'admin@terrastay.com', 'password' => 'password'])
             ->assertOk()
             ->assertJsonStructure(['token', 'user' => ['id', 'name', 'email']]);
     }
@@ -62,7 +62,7 @@ class AuthTest extends TestCase
     {
         $this->admin();
 
-        $this->postJson('/api/login', ['email' => 'admin@example.com', 'password' => 'wrong'])
+        $this->postJson('/api/login', ['email' => 'admin@terrastay.com', 'password' => 'wrong'])
             ->assertStatus(401);
     }
 

@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
-use App\Models\Room;
+use App\Models\RoomType;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
- * @mixin Room
+ * @mixin RoomType
  */
-class RoomResource extends JsonResource
+class RoomTypeResource extends JsonResource
 {
     /**
      * @return array<string, mixed>
@@ -24,7 +24,8 @@ class RoomResource extends JsonResource
             'name' => $this->name,
             'price_per_night' => $this->price_per_night,
             'max_occupancy' => $this->max_occupancy,
-            'total_rooms' => $this->total_rooms,
+            'units_count' => $this->whenCounted('units'),
+            'units' => RoomUnitResource::collection($this->whenLoaded('units')),
             'hotel' => new HotelResource($this->whenLoaded('hotel')),
             'created_at' => $this->created_at?->toIso8601String(),
         ];

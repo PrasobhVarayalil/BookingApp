@@ -6,19 +6,20 @@ namespace Tests\Feature;
 
 use App\Models\Booking;
 use App\Models\Hotel;
-use App\Models\Room;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Concerns\CreatesRoomInventory;
 use Tests\TestCase;
 
 class InventoryTest extends TestCase
 {
+    use CreatesRoomInventory;
     use RefreshDatabase;
 
-    public function test_hotel_with_rooms_cannot_be_deleted(): void
+    public function test_hotel_with_room_types_cannot_be_deleted(): void
     {
         $hotel = Hotel::factory()->create();
-        Room::factory()->forHotel($hotel)->create();
+        $this->roomTypeWithUnits(1, [], $hotel);
 
         $this->actingAs(User::factory()->create())
             ->delete(route('hotels.destroy', $hotel))
@@ -27,16 +28,16 @@ class InventoryTest extends TestCase
         $this->assertNotSoftDeleted('hotels', ['id' => $hotel->id]);
     }
 
-    public function test_room_with_bookings_cannot_be_deleted(): void
+    public function test_room_type_with_bookings_cannot_be_deleted(): void
     {
-        $room = Room::factory()->forHotel(Hotel::factory()->create())->create();
-        Booking::factory()->forRoom($room)->create();
+        $roomType = $this->roomTypeWithUnits(1);
+        Booking::factory()->forType($roomType, $roomType->units->first())->create();
 
         $this->actingAs(User::factory()->create())
-            ->delete(route('rooms.destroy', $room))
+            ->delete(route('rooms.destroy', $roomType))
             ->assertSessionHas('error');
 
-        $this->assertNotSoftDeleted('rooms', ['id' => $room->id]);
+        $this->assertNotSoftDeleted('room_types', ['id' => $roomType->id]);
     }
 
     public function test_empty_hotel_can_be_deleted(): void

@@ -8,9 +8,13 @@ use App\Exceptions\RoomNotAvailableException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreBookingRequest;
 use App\Models\Booking;
+use App\Models\RoomType;
 use App\Services\BookingService;
-use App\Services\RoomService;
+use App\Services\RoomTypeService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 
 class BookingController extends Controller
@@ -19,14 +23,45 @@ class BookingController extends Controller
 
     public function __construct(
         private readonly BookingService $bookings,
-        private readonly RoomService $rooms,
+        private readonly RoomTypeService $roomTypes,
     ) {}
 
-    public function index(): View
+    public function index(Request $request): View
     {
         return view('bookings.index', [
             'bookings' => $this->bookings->paginate(self::PER_PAGE),
-            'rooms' => $this->rooms->allWithHotel(),
+            'roomTypes' => $this->roomTypes->allWithHotel(),
+            'prefill' => [
+                'room_type_id' => $request->query('room_type_id'),
+                'checkin_date' => $request->query('checkin_date'),
+                'checkout_date' => $request->query('checkout_date'),
+                'guests' => $request->query('guests', 1),
+            ],
+        ]);
+    }
+
+    public function availableUnits(Request $request, RoomType $roomType): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'checkin_date' => ['required', 'date', 'after_or_equal:today'],
+            'checkout_date' => ['required', 'date', 'after:checkin_date'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['message' => $validator->errors()->first(), 'data' => []], 422);
+        }
+
+        $units = $this->bookings->listAvailableUnits(
+            $roomType->id,
+            (string) $request->date('checkin_date')?->toDateString(),
+            (string) $request->date('checkout_date')?->toDateString(),
+        );
+
+        return response()->json([
+            'data' => $units->map(fn ($unit) => [
+                'id' => $unit->id,
+                'room_number' => $unit->room_number,
+            ])->values(),
         ]);
     }
 
@@ -43,7 +78,7 @@ class BookingController extends Controller
 
     public function destroy(Booking $booking): RedirectResponse
     {
-        $this->bookings->delete($booking);
+        $this->bookings->cancel($booking);
 
         return redirect()->route('bookings.index')->with('success', 'Booking cancelled.');
     }

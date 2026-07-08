@@ -7,6 +7,8 @@ namespace App\Http\Controllers\Web;
 use App\Exceptions\ResourceInUseException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreHotelRequest;
+use App\Models\City;
+use App\Models\Country;
 use App\Models\Hotel;
 use App\Services\HotelService;
 use Illuminate\Http\RedirectResponse;
@@ -24,6 +26,7 @@ class HotelController extends Controller
     public function index(Request $request): View
     {
         $filters = [
+            'country' => $request->query('country'),
             'city' => $request->query('city'),
             'rating' => $request->query('rating'),
         ];
@@ -31,6 +34,8 @@ class HotelController extends Controller
         return view('hotels.index', [
             'hotels' => $this->hotels->paginate($filters, self::PER_PAGE)->withQueryString(),
             'filters' => $filters,
+            'countries' => Country::with('cities')->orderBy('name')->get(),
+            'cities' => City::orderBy('name')->distinct()->pluck('name'),
         ]);
     }
 

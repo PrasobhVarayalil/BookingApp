@@ -29,10 +29,11 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('/rooms', [RoomController::class, 'index'])->name('rooms.index');
     Route::post('/rooms', [RoomController::class, 'store'])->name('rooms.store');
-    Route::put('/rooms/{room}', [RoomController::class, 'update'])->name('rooms.update');
-    Route::delete('/rooms/{room}', [RoomController::class, 'destroy'])->name('rooms.destroy');
+    Route::put('/rooms/{roomType}', [RoomController::class, 'update'])->name('rooms.update');
+    Route::delete('/rooms/{roomType}', [RoomController::class, 'destroy'])->name('rooms.destroy');
 
     Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
+    Route::get('/bookings/available-units/{roomType}', [BookingController::class, 'availableUnits'])->name('bookings.available-units');
     Route::post('/bookings', [BookingController::class, 'store'])->name('bookings.store');
     Route::delete('/bookings/{booking}', [BookingController::class, 'destroy'])->name('bookings.destroy');
 

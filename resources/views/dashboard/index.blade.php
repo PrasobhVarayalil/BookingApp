@@ -20,9 +20,9 @@
 <div class="row g-3">
     @foreach ([
         ['Total Hotels', $stats['hotels'], 'bi-buildings-fill', 'hb-grad-indigo', 'hotels.index'],
-        ['Total Rooms', $stats['rooms'], 'bi-door-open-fill', 'hb-grad-teal', 'rooms.index'],
-        ['Total Bookings', $stats['bookings'], 'bi-calendar-check-fill', 'hb-grad-sky', 'bookings.index'],
-        ['Avg. Rating', number_format($stats['average_rating'], 1).' ★', 'bi-star-fill', 'hb-grad-amber', 'hotels.index'],
+        ['Total Rooms', $stats['room_units'], 'bi-grid-fill', 'hb-grad-sky', 'rooms.index'],
+        ['Room Types', $stats['room_types'], 'bi-door-open-fill', 'hb-grad-teal', 'rooms.index'],
+        ['Bookings', $stats['bookings'], 'bi-calendar-check-fill', 'hb-grad-amber', 'bookings.index'],
     ] as [$label, $value, $icon, $grad, $route])
         <div class="col-sm-6 col-xl-3">
             <a href="{{ route($route) }}" class="text-decoration-none text-reset">
@@ -79,7 +79,11 @@
                 </div>
                 <div class="d-flex justify-content-between align-items-center py-2 border-bottom" style="border-color:var(--hb-border)!important">
                     <span class="text-muted"><i class="bi bi-door-open me-2"></i>Room types</span>
-                    <span class="fw-semibold">{{ $stats['rooms'] }}</span>
+                    <span class="fw-semibold">{{ $stats['room_types'] }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center py-2 border-bottom" style="border-color:var(--hb-border)!important">
+                    <span class="text-muted"><i class="bi bi-grid me-2"></i>Total rooms</span>
+                    <span class="fw-semibold">{{ $stats['room_units'] }}</span>
                 </div>
                 <div class="d-flex justify-content-between align-items-center py-2 border-bottom" style="border-color:var(--hb-border)!important">
                     <span class="text-muted"><i class="bi bi-calendar-check me-2"></i>Confirmed bookings</span>

@@ -4,37 +4,33 @@ declare(strict_types=1);
 
 namespace App\Repositories\Contracts;
 
-use App\Models\Room;
+use App\Models\RoomType;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 
-interface RoomRepositoryInterface
+interface RoomTypeRepositoryInterface
 {
     /**
      * @param  array<string, mixed>  $attributes
      */
-    public function create(array $attributes): Room;
+    public function create(array $attributes): RoomType;
 
     /**
      * @param  array<string, mixed>  $attributes
      */
-    public function update(Room $room, array $attributes): Room;
+    public function update(RoomType $roomType, array $attributes): RoomType;
 
-    public function delete(Room $room): void;
+    public function delete(RoomType $roomType): void;
 
-    /**
-     * Load a room under a pessimistic lock, used inside the booking transaction
-     * so two concurrent requests cannot overbook the same room.
-     */
-    public function findForUpdate(string $id): ?Room;
+    public function findForUpdate(string $id): ?RoomType;
 
     /**
-     * @return LengthAwarePaginator<int, Room>
+     * @return LengthAwarePaginator<int, RoomType>
      */
     public function paginateWithHotel(int $perPage, ?string $hotelId = null, ?string $search = null): LengthAwarePaginator;
 
     /**
-     * @return Collection<int, Room>
+     * @return Collection<int, RoomType>
      */
     public function allWithHotel(): Collection;
 

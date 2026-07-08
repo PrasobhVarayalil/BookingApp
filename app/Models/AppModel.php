@@ -12,11 +12,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Schema;
 
-/**
- * Base model for the inventory tables. Keeps the cross-cutting concerns —
- * UUID keys, soft deletes and the created_by/updated_by/deleted_by audit
- * trail — in one place instead of repeating them on every model.
- */
 abstract class AppModel extends Model
 {
     use HasFactory;
@@ -34,17 +29,11 @@ abstract class AppModel extends Model
 
         static::deleting(function (self $model): void {
             if ($model->stamp('deleted_by')) {
-                // Soft delete only writes deleted_at/updated_at, so persist the
-                // stamped user id separately without re-firing model events.
                 $model->saveQuietly();
             }
         });
     }
 
-    /**
-     * Stamp an audit column with the current user id, when it makes sense to.
-     * Returns whether anything was written so callers can react (see deleting).
-     */
     protected function stamp(string $column): bool
     {
         if ($this->isDirty($column) || ! auth()->check()) {

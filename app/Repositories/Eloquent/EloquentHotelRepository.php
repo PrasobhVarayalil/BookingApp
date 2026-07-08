@@ -32,7 +32,8 @@ class EloquentHotelRepository implements HotelRepositoryInterface
     public function paginate(array $filters, int $perPage): LengthAwarePaginator
     {
         return Hotel::query()
-            ->withCount('rooms')
+            ->withCount('roomTypes')
+            ->when(filled($filters['country'] ?? null), fn (Builder $q) => $q->whereRaw('LOWER(country) = ?', [mb_strtolower((string) $filters['country'])]))
             ->when(filled($filters['city'] ?? null), fn (Builder $q) => $q->whereRaw('LOWER(city) = ?', [mb_strtolower((string) $filters['city'])]))
             ->when(filled($filters['rating'] ?? null), fn (Builder $q) => $q->where('rating', '>=', (int) $filters['rating']))
             ->latest()
@@ -46,14 +47,12 @@ class EloquentHotelRepository implements HotelRepositoryInterface
 
     public function availableInCity(string $city, int $guests): Collection
     {
-        // Used both as a whereHas constraint (Builder) and an eager-load
-        // constraint (Relation), so leave the argument untyped.
         $forGuests = fn ($q) => $q->where('max_occupancy', '>=', $guests);
 
         return Hotel::query()
             ->whereRaw('LOWER(city) = ?', [mb_strtolower($city)])
-            ->whereHas('rooms', $forGuests)
-            ->with(['rooms' => $forGuests])
+            ->whereHas('roomTypes', $forGuests)
+            ->with(['roomTypes' => $forGuests])
             ->orderByDesc('rating')
             ->get();
     }

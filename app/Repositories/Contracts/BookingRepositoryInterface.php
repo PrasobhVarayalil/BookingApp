@@ -15,7 +15,7 @@ interface BookingRepositoryInterface
      */
     public function create(array $attributes): Booking;
 
-    public function delete(Booking $booking): void;
+    public function cancel(Booking $booking): void;
 
     public function count(): int;
 
@@ -25,19 +25,25 @@ interface BookingRepositoryInterface
     public function paginateWithRoomAndHotel(int $perPage): LengthAwarePaginator;
 
     /**
-     * Confirmed bookings overlapping [checkin, checkout) for many rooms,
-     * grouped by room_id.
+     * Confirmed bookings overlapping [checkin, checkout) for many room types,
+     * grouped by room_type_id.
      *
-     * @param  list<string>  $roomIds
+     * @param  list<string>  $roomTypeIds
      * @return Collection<string, Collection<int, Booking>>
      */
-    public function overlappingForRooms(array $roomIds, string $checkin, string $checkout): Collection;
+    public function overlappingForRoomTypes(array $roomTypeIds, string $checkin, string $checkout): Collection;
 
     /**
-     * Confirmed bookings overlapping [checkin, checkout) for a single room.
-     * With $lock the rows are read for update inside a transaction.
+     * Confirmed bookings overlapping [checkin, checkout) for a single unit.
      *
      * @return Collection<int, Booking>
      */
-    public function overlappingForRoom(string $roomId, string $checkin, string $checkout, bool $lock = false): Collection;
+    public function overlappingForUnit(string $roomUnitId, string $checkin, string $checkout, bool $lock = false): Collection;
+
+    /**
+     * Unit ids that already have a confirmed overlap in the window.
+     *
+     * @return list<string>
+     */
+    public function overlappingUnitIdsForType(string $roomTypeId, string $checkin, string $checkout): array;
 }

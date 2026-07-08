@@ -7,14 +7,6 @@ namespace App\Services\Search;
 use Closure;
 use Illuminate\Support\Facades\Cache;
 
-/**
- * Short-lived cache for availability search results.
- *
- * Rather than cache tags (unsupported on the file/array drivers), invalidation
- * uses a version counter folded into the key. Booking writes call bump(), which
- * increments the version and leaves every earlier entry unreachable — they age
- * out on their own TTL.
- */
 class SearchResultCache
 {
     private const VERSION_KEY = 'search:version';

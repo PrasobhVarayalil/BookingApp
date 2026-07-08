@@ -7,8 +7,6 @@ namespace App\Services;
 use App\Exceptions\ResourceInUseException;
 use App\Models\Hotel;
 use App\Repositories\Contracts\HotelRepositoryInterface;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Collection;
 
 class HotelService
 {
@@ -37,28 +35,24 @@ class HotelService
      */
     public function delete(Hotel $hotel): void
     {
-        $rooms = $hotel->rooms()->count();
+        $types = $hotel->roomTypes()->count();
 
-        if ($rooms > 0) {
-            throw ResourceInUseException::hotelHasRooms($rooms);
+        if ($types > 0) {
+            throw ResourceInUseException::hotelHasRoomTypes($types);
         }
 
         $this->hotels->delete($hotel);
     }
 
     /**
-     * @param  array{city?: string|null, rating?: int|null}  $filters
-     * @return LengthAwarePaginator<int, Hotel>
+     * @param  array{country?: string|null, city?: string|null, rating?: int|null}  $filters
      */
-    public function paginate(array $filters, int $perPage = 15): LengthAwarePaginator
+    public function paginate(array $filters, int $perPage = 15)
     {
         return $this->hotels->paginate($filters, $perPage);
     }
 
-    /**
-     * @return Collection<int, Hotel>
-     */
-    public function all(): Collection
+    public function all()
     {
         return $this->hotels->all();
     }

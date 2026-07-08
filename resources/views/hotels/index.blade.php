@@ -4,21 +4,38 @@
 @section('crumb', 'Inventory')
 
 @section('content')
-<div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3">
-    <form method="GET" class="d-flex flex-wrap gap-2">
-        <div class="input-icon">
-            <i class="bi bi-geo-alt"></i>
-            <input type="text" name="city" value="{{ $filters['city'] }}" class="form-control" placeholder="Filter by city" style="min-width:220px">
+<div class="hb-toolbar mb-3">
+    <form method="GET" class="hb-filters">
+        <div class="hb-filter-field">
+            <i class="bi bi-globe2"></i>
+            <select name="country" id="filterCountry" class="form-select form-select-sm">
+                <option value="">All countries</option>
+                @foreach ($countries as $country)
+                    <option value="{{ $country->name }}" @selected((string) $filters['country'] === (string) $country->name)>{{ $country->name }}</option>
+                @endforeach
+            </select>
         </div>
-        <select name="rating" class="form-select" style="max-width:170px">
-            <option value="">Any rating</option>
-            @for ($i = 5; $i >= 1; $i--)
-                <option value="{{ $i }}" @selected((string) $filters['rating'] === (string) $i)>{{ $i }} ★ &amp; up</option>
-            @endfor
-        </select>
-        <button class="btn btn-soft"><i class="bi bi-funnel me-1"></i>Filter</button>
-        @if ($filters['city'] || $filters['rating'])
-            <a href="{{ route('hotels.index') }}" class="btn btn-link text-decoration-none">Reset</a>
+        <div class="hb-filter-field">
+            <i class="bi bi-geo-alt"></i>
+            <select name="city" id="filterCity" data-selected="{{ $filters['city'] }}" class="form-select form-select-sm">
+                <option value="">All cities</option>
+                @foreach ($cities as $city)
+                    <option value="{{ $city }}" @selected((string) $filters['city'] === (string) $city)>{{ $city }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="hb-filter-field">
+            <i class="bi bi-star"></i>
+            <select name="rating" class="form-select form-select-sm" data-no-search>
+                <option value="">Any rating</option>
+                @for ($i = 5; $i >= 1; $i--)
+                    <option value="{{ $i }}" @selected((string) $filters['rating'] === (string) $i)>{{ $i }}★ &amp; up</option>
+                @endfor
+            </select>
+        </div>
+        <button class="btn btn-sm btn-soft"><i class="bi bi-funnel me-1"></i>Filter</button>
+        @if ($filters['country'] || $filters['city'] || $filters['rating'])
+            <a href="{{ route('hotels.index') }}" class="btn btn-sm btn-link text-decoration-none px-2">Clear</a>
         @endif
     </form>
 
@@ -50,7 +67,7 @@
                         </td>
                         <td>{{ $hotel->city }}, {{ $hotel->country }}</td>
                         <td class="hb-star">{{ str_repeat('★', $hotel->rating) }}<span class="text-muted">{{ str_repeat('☆', 5 - $hotel->rating) }}</span></td>
-                        <td><span class="badge text-bg-light">{{ $hotel->rooms_count }} rooms</span></td>
+                        <td><span class="badge text-bg-light">{{ $hotel->room_types_count }} types</span></td>
                         <td class="text-end text-nowrap">
                             <button class="btn btn-sm btn-soft" data-bs-toggle="modal" data-bs-target="#editHotel{{ $loop->index }}"><i class="bi bi-pencil"></i></button>
                             <form method="POST" action="{{ route('hotels.destroy', $hotel) }}" class="d-inline" onsubmit="return confirm('Delete {{ $hotel->name }}?')">
@@ -117,4 +134,39 @@
     <script>new bootstrap.Modal(document.getElementById('createHotel')).show();</script>
     @endpush
 @endif
+
+@push('scripts')
+<script>
+(() => {
+    const country = document.getElementById('filterCountry');
+    const city = document.getElementById('filterCity');
+    if (!country || !city) return;
+
+    const allCities = @json($cities);
+
+    const fill = (selected) => {
+        const list = country.value ? (window.hbLocations?.[country.value] || []) : allCities;
+        const keep = list.includes(selected) ? selected : '';
+        const ts = city.tomselect;
+
+        if (ts) {
+            ts.clear(true);
+            ts.clearOptions();
+            ts.addOption({ value: '', text: 'All cities' });
+            list.forEach(name => ts.addOption({ value: name, text: name }));
+            ts.refreshOptions(false);
+            ts.setValue(keep, true);
+        } else {
+            city.innerHTML = '<option value="">All cities</option>'
+                + list.map(n => `<option value="${n}">${n}</option>`).join('');
+            city.value = keep;
+        }
+    };
+
+    fill(city.dataset.selected || '');
+    const onChange = () => fill('');
+    country.tomselect ? country.tomselect.on('change', onChange) : country.addEventListener('change', onChange);
+})();
+</script>
+@endpush
 @endsection

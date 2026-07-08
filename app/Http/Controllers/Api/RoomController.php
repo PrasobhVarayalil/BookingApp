@@ -5,22 +5,30 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreRoomRequest;
-use App\Http\Resources\RoomResource;
-use App\Services\RoomService;
+use App\Http\Requests\StoreRoomTypeRequest;
+use App\Http\Resources\RoomTypeResource;
+use App\Services\RoomTypeService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 
 class RoomController extends Controller
 {
     public function __construct(
-        private readonly RoomService $rooms,
+        private readonly RoomTypeService $roomTypes,
     ) {}
 
-    public function store(StoreRoomRequest $request): JsonResponse
+    public function store(StoreRoomTypeRequest $request): JsonResponse
     {
-        $room = $this->rooms->create($request->validated());
+        $numbers = $request->unitNumbers();
 
-        return RoomResource::make($room->load('hotel'))->response()->setStatusCode(Response::HTTP_CREATED);
+        if ($numbers === []) {
+            return $this->error('At least one room number is required.', Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $roomType = $this->roomTypes->create($request->typeAttributes(), $numbers);
+
+        return RoomTypeResource::make($roomType->load('hotel', 'units'))
+            ->response()
+            ->setStatusCode(Response::HTTP_CREATED);
     }
 }

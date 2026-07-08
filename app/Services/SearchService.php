@@ -5,8 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Hotel;
-use App\Models\Room;
-use App\Repositories\Contracts\BookingRepositoryInterface;
+use App\Models\RoomType;
 use App\Repositories\Contracts\HotelRepositoryInterface;
 use App\Services\Search\SearchResultCache;
 use Illuminate\Support\Carbon;
@@ -15,7 +14,6 @@ class SearchService
 {
     public function __construct(
         private readonly HotelRepositoryInterface $hotels,
-        private readonly BookingRepositoryInterface $bookings,
         private readonly BookingService $bookingService,
         private readonly SearchResultCache $cache,
     ) {}
@@ -47,31 +45,24 @@ class SearchService
         $nights = (int) $checkin->diffInDays($checkout);
         $hotels = $this->hotels->availableInCity($city, $guests);
 
-        $roomIds = $hotels->flatMap(fn (Hotel $hotel) => $hotel->rooms->modelKeys())->all();
-        $bookingsByRoom = $this->bookings->overlappingForRooms($roomIds, $checkin->toDateString(), $checkout->toDateString());
-
         $results = $hotels
-            ->map(function (Hotel $hotel) use ($bookingsByRoom, $checkin, $checkout, $nights): ?array {
-                $rooms = $hotel->rooms
-                    ->map(function (Room $room) use ($bookingsByRoom, $checkin, $checkout, $nights): ?array {
-                        $units = $this->bookingService->availableUnits(
-                            $room->total_rooms,
-                            $bookingsByRoom->get($room->id, collect()),
-                            $checkin,
-                            $checkout,
-                        );
+            ->map(function (Hotel $hotel) use ($checkin, $checkout, $nights): ?array {
+                $rooms = $hotel->roomTypes
+                    ->map(function (RoomType $roomType) use ($checkin, $checkout, $nights): ?array {
+                        $freeUnits = $this->bookingService->availableUnitsForStay($roomType, $checkin, $checkout);
 
-                        if ($units < 1) {
+                        if ($freeUnits->isEmpty()) {
                             return null;
                         }
 
                         return [
-                            'id' => $room->id,
-                            'name' => $room->name,
-                            'price_per_night' => (float) $room->price_per_night,
-                            'max_occupancy' => $room->max_occupancy,
-                            'available_units' => $units,
-                            'total_price' => round((float) $room->price_per_night * $nights, 2),
+                            'id' => $roomType->id,
+                            'name' => $roomType->name,
+                            'price_per_night' => (float) $roomType->price_per_night,
+                            'max_occupancy' => $roomType->max_occupancy,
+                            'available_units' => $freeUnits->count(),
+                            'available_room_numbers' => $freeUnits->pluck('room_number')->values()->all(),
+                            'total_price' => round((float) $roomType->price_per_night * $nights, 2),
                         ];
                     })
                     ->filter()

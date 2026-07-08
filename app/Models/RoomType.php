@@ -7,14 +7,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Room extends AppModel
+class RoomType extends AppModel
 {
+    protected $table = 'room_types';
+
     protected $fillable = [
         'hotel_id',
         'name',
         'price_per_night',
         'max_occupancy',
-        'total_rooms',
     ];
 
     protected function casts(): array
@@ -22,7 +23,6 @@ class Room extends AppModel
         return [
             'price_per_night' => 'decimal:2',
             'max_occupancy' => 'integer',
-            'total_rooms' => 'integer',
         ];
     }
 
@@ -32,6 +32,14 @@ class Room extends AppModel
     public function hotel(): BelongsTo
     {
         return $this->belongsTo(Hotel::class);
+    }
+
+    /**
+     * @return HasMany<RoomUnit, $this>
+     */
+    public function units(): HasMany
+    {
+        return $this->hasMany(RoomUnit::class);
     }
 
     /**

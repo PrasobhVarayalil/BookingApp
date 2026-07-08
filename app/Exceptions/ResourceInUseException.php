@@ -8,20 +8,16 @@ use App\Exceptions\Contracts\HasHttpStatus;
 use Illuminate\Http\Response;
 use RuntimeException;
 
-/**
- * Raised when a record still has dependents and therefore cannot be deleted.
- * The message is safe to show to the user.
- */
 class ResourceInUseException extends RuntimeException implements HasHttpStatus
 {
-    public static function hotelHasRooms(int $count): self
+    public static function hotelHasRoomTypes(int $count): self
     {
-        return new self(self::phrase('hotel', 'room', $count, 'deleting the hotel'));
+        return new self(self::phrase('hotel', 'room type', $count, 'deleting the hotel'));
     }
 
-    public static function roomHasBookings(int $count): self
+    public static function roomTypeHasBookings(int $count): self
     {
-        return new self(self::phrase('room', 'booking', $count, 'deleting the room'));
+        return new self(self::phrase('room type', 'booking', $count, 'deleting the room type'));
     }
 
     public function httpStatus(): int

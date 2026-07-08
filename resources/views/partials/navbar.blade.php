@@ -2,7 +2,7 @@
     $nav = [
         ['dashboard', 'Dashboard', 'bi-grid-1x2', 'dashboard'],
         ['hotels.index', 'Hotels', 'bi-buildings', 'hotels.*'],
-        ['rooms.index', 'Rooms', 'bi-door-open', 'rooms.*'],
+        ['rooms.index', 'Room Types', 'bi-door-open', 'rooms.*'],
         ['bookings.index', 'Bookings', 'bi-calendar-check', 'bookings.*'],
         ['search.index', 'Search', 'bi-search', 'search.*'],
     ];

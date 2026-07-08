@@ -13,10 +13,15 @@ class Booking extends AppModel
     public const string STATUS_CANCELLED = 'cancelled';
 
     protected $fillable = [
-        'room_id',
+        'booking_reference',
+        'room_type_id',
+        'room_unit_id',
         'checkin_date',
         'checkout_date',
         'guests',
+        'guest_name',
+        'guest_email',
+        'guest_phone',
         'status',
         'total_price',
     ];
@@ -32,10 +37,18 @@ class Booking extends AppModel
     }
 
     /**
-     * @return BelongsTo<Room, $this>
+     * @return BelongsTo<RoomType, $this>
      */
-    public function room(): BelongsTo
+    public function roomType(): BelongsTo
     {
-        return $this->belongsTo(Room::class);
+        return $this->belongsTo(RoomType::class);
+    }
+
+    /**
+     * @return BelongsTo<RoomUnit, $this>
+     */
+    public function roomUnit(): BelongsTo
+    {
+        return $this->belongsTo(RoomUnit::class);
     }
 }

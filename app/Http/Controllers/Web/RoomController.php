@@ -6,10 +6,10 @@ namespace App\Http\Controllers\Web;
 
 use App\Exceptions\ResourceInUseException;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\StoreRoomRequest;
-use App\Models\Room;
+use App\Http\Requests\StoreRoomTypeRequest;
+use App\Models\RoomType;
 use App\Services\HotelService;
-use App\Services\RoomService;
+use App\Services\RoomTypeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -19,7 +19,7 @@ class RoomController extends Controller
     private const PER_PAGE = 10;
 
     public function __construct(
-        private readonly RoomService $rooms,
+        private readonly RoomTypeService $roomTypes,
         private readonly HotelService $hotels,
     ) {}
 
@@ -29,34 +29,40 @@ class RoomController extends Controller
         $search = $request->query('search');
 
         return view('rooms.index', [
-            'rooms' => $this->rooms->paginateWithHotel(self::PER_PAGE, $hotelId, $search)->withQueryString(),
+            'roomTypes' => $this->roomTypes->paginateWithHotel(self::PER_PAGE, $hotelId, $search)->withQueryString(),
             'hotels' => $this->hotels->all(),
             'filters' => ['hotel' => $hotelId, 'search' => $search],
         ]);
     }
 
-    public function store(StoreRoomRequest $request): RedirectResponse
+    public function store(StoreRoomTypeRequest $request): RedirectResponse
     {
-        $this->rooms->create($request->validated());
+        $numbers = $request->unitNumbers();
 
-        return redirect()->route('rooms.index')->with('success', 'Room added.');
+        if ($numbers === []) {
+            return back()->withInput()->withErrors(['room_numbers' => 'Enter at least one room number.']);
+        }
+
+        $this->roomTypes->create($request->typeAttributes(), $numbers);
+
+        return redirect()->route('rooms.index')->with('success', 'Room type added.');
     }
 
-    public function update(StoreRoomRequest $request, Room $room): RedirectResponse
+    public function update(StoreRoomTypeRequest $request, RoomType $roomType): RedirectResponse
     {
-        $this->rooms->update($room, $request->validated());
+        $this->roomTypes->update($roomType, $request->typeAttributes());
 
-        return redirect()->route('rooms.index')->with('success', 'Room updated.');
+        return redirect()->route('rooms.index')->with('success', 'Room type updated.');
     }
 
-    public function destroy(Room $room): RedirectResponse
+    public function destroy(RoomType $roomType): RedirectResponse
     {
         try {
-            $this->rooms->delete($room);
+            $this->roomTypes->delete($roomType);
         } catch (ResourceInUseException $e) {
             return back()->with('error', $e->getMessage());
         }
 
-        return redirect()->route('rooms.index')->with('success', 'Room deleted.');
+        return redirect()->route('rooms.index')->with('success', 'Room type deleted.');
     }
 }

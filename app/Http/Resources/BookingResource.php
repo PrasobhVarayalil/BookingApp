@@ -20,13 +20,19 @@ class BookingResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'room_id' => $this->room_id,
+            'booking_reference' => $this->booking_reference,
+            'room_type_id' => $this->room_type_id,
+            'room_unit_id' => $this->room_unit_id,
             'checkin_date' => $this->checkin_date?->toDateString(),
             'checkout_date' => $this->checkout_date?->toDateString(),
             'guests' => $this->guests,
+            'guest_name' => $this->guest_name,
+            'guest_email' => $this->guest_email,
+            'guest_phone' => $this->guest_phone,
             'status' => $this->status,
             'total_price' => $this->total_price,
-            'room' => new RoomResource($this->whenLoaded('room')),
+            'room_type' => new RoomTypeResource($this->whenLoaded('roomType')),
+            'room_unit' => new RoomUnitResource($this->whenLoaded('roomUnit')),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

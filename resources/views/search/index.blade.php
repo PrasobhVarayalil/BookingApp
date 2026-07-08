@@ -11,10 +11,13 @@
         <form method="POST" action="{{ route('search.run') }}" class="row g-2">
             @csrf
             <div class="col-md-4">
-                <div class="input-icon">
-                    <i class="bi bi-geo-alt"></i>
-                    <input type="text" name="city" value="{{ old('city', $filters['city'] ?? '') }}" class="form-control @error('city') is-invalid @enderror" placeholder="City" required>
-                </div>
+                @php($selCity = old('city', $filters['city'] ?? ''))
+                <select name="city" class="form-select @error('city') is-invalid @enderror" required>
+                    <option value="">Choose a city</option>
+                    @foreach ($cities as $city)
+                        <option value="{{ $city }}" @selected($selCity === $city)>{{ $city }}</option>
+                    @endforeach
+                </select>
                 @error('city')<div class="text-warning small mt-1">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-3 col-6">
@@ -58,11 +61,12 @@
                 <table class="table hb-table mb-0 align-middle">
                     <thead>
                         <tr>
-                            <th>Room</th>
+                            <th>Room type</th>
                             <th>Price / night</th>
                             <th>Max guests</th>
-                            <th>Availability</th>
+                            <th>Available rooms</th>
                             <th class="text-end">Total · {{ $result['nights'] }} {{ Str::plural('night', $result['nights']) }}</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -71,8 +75,14 @@
                                 <td class="fw-semibold">{{ $room['name'] }}</td>
                                 <td>${{ number_format($room['price_per_night'], 2) }}</td>
                                 <td><i class="bi bi-people text-muted me-1"></i>{{ $room['max_occupancy'] }}</td>
-                                <td><span class="hb-chip hb-chip-green">{{ $room['available_units'] }} left</span></td>
+                                <td>
+                                    <span class="hb-chip hb-chip-green">{{ $room['available_units'] }} left</span>
+                                    <div class="text-muted small mt-1">{{ implode(', ', $room['available_room_numbers']) }}</div>
+                                </td>
                                 <td class="text-end fw-bold" style="color:var(--hb-primary)">${{ number_format($room['total_price'], 2) }}</td>
+                                <td class="text-end">
+                                    <a href="{{ route('bookings.index', ['room_type_id' => $room['id'], 'checkin_date' => $payload['meta']['checkin_date'], 'checkout_date' => $payload['meta']['checkout_date'], 'guests' => $payload['meta']['guests']]) }}" class="btn btn-sm btn-primary">Book</a>
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>

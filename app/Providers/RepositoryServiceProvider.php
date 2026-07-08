@@ -6,10 +6,12 @@ namespace App\Providers;
 
 use App\Repositories\Contracts\BookingRepositoryInterface;
 use App\Repositories\Contracts\HotelRepositoryInterface;
-use App\Repositories\Contracts\RoomRepositoryInterface;
+use App\Repositories\Contracts\RoomTypeRepositoryInterface;
+use App\Repositories\Contracts\RoomUnitRepositoryInterface;
 use App\Repositories\Eloquent\EloquentBookingRepository;
 use App\Repositories\Eloquent\EloquentHotelRepository;
-use App\Repositories\Eloquent\EloquentRoomRepository;
+use App\Repositories\Eloquent\EloquentRoomTypeRepository;
+use App\Repositories\Eloquent\EloquentRoomUnitRepository;
 use Illuminate\Support\ServiceProvider;
 
 class RepositoryServiceProvider extends ServiceProvider
@@ -19,7 +21,8 @@ class RepositoryServiceProvider extends ServiceProvider
      */
     private array $repositories = [
         HotelRepositoryInterface::class => EloquentHotelRepository::class,
-        RoomRepositoryInterface::class => EloquentRoomRepository::class,
+        RoomTypeRepositoryInterface::class => EloquentRoomTypeRepository::class,
+        RoomUnitRepositoryInterface::class => EloquentRoomUnitRepository::class,
         BookingRepositoryInterface::class => EloquentBookingRepository::class,
     ];
 

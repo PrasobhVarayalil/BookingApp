@@ -4,40 +4,41 @@ declare(strict_types=1);
 
 namespace App\Repositories\Eloquent;
 
-use App\Models\Room;
-use App\Repositories\Contracts\RoomRepositoryInterface;
+use App\Models\RoomType;
+use App\Repositories\Contracts\RoomTypeRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
-class EloquentRoomRepository implements RoomRepositoryInterface
+class EloquentRoomTypeRepository implements RoomTypeRepositoryInterface
 {
-    public function create(array $attributes): Room
+    public function create(array $attributes): RoomType
     {
-        return Room::create($attributes);
+        return RoomType::create($attributes);
     }
 
-    public function update(Room $room, array $attributes): Room
+    public function update(RoomType $roomType, array $attributes): RoomType
     {
-        $room->update($attributes);
+        $roomType->update($attributes);
 
-        return $room;
+        return $roomType;
     }
 
-    public function delete(Room $room): void
+    public function delete(RoomType $roomType): void
     {
-        $room->delete();
+        $roomType->delete();
     }
 
-    public function findForUpdate(string $id): ?Room
+    public function findForUpdate(string $id): ?RoomType
     {
-        return Room::whereKey($id)->lockForUpdate()->first();
+        return RoomType::whereKey($id)->lockForUpdate()->first();
     }
 
     public function paginateWithHotel(int $perPage, ?string $hotelId = null, ?string $search = null): LengthAwarePaginator
     {
-        return Room::query()
-            ->with('hotel')
+        return RoomType::query()
+            ->with(['hotel', 'units'])
+            ->withCount('units')
             ->when(filled($hotelId), fn (Builder $q) => $q->where('hotel_id', $hotelId))
             ->when(filled($search), function (Builder $q) use ($search): void {
                 $like = '%'.$search.'%';
@@ -51,11 +52,11 @@ class EloquentRoomRepository implements RoomRepositoryInterface
 
     public function allWithHotel(): Collection
     {
-        return Room::with('hotel')->orderBy('name')->get();
+        return RoomType::with(['hotel', 'units'])->orderBy('name')->get();
     }
 
     public function count(): int
     {
-        return Room::count();
+        return RoomType::count();
     }
 }

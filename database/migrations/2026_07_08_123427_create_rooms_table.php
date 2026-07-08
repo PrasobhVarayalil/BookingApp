@@ -10,16 +10,12 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('rooms', function (Blueprint $table): void {
+        Schema::create('room_types', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('hotel_id')->constrained()->cascadeOnDelete();
             $table->string('name');
             $table->decimal('price_per_night', 10, 2);
             $table->unsignedSmallInteger('max_occupancy');
-
-            // Physical inventory of this room type. What's actually bookable for a
-            // given date range is derived from the bookings table, not stored here.
-            $table->unsignedSmallInteger('total_rooms');
 
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
@@ -32,6 +28,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('rooms');
+        Schema::dropIfExists('room_types');
     }
 };

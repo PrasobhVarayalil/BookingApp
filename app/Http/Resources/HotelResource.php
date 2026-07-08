@@ -24,8 +24,8 @@ class HotelResource extends JsonResource
             'city' => $this->city,
             'country' => $this->country,
             'rating' => $this->rating,
-            'rooms_count' => $this->whenCounted('rooms'),
-            'rooms' => RoomResource::collection($this->whenLoaded('rooms')),
+            'room_types' => RoomTypeResource::collection($this->whenLoaded('roomTypes')),
+            'room_types_count' => $this->whenCounted('roomTypes'),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

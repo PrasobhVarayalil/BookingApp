@@ -12,10 +12,15 @@ return new class extends Migration
     {
         Schema::create('bookings', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('room_id')->constrained()->cascadeOnDelete();
+            $table->string('booking_reference')->unique();
+            $table->foreignUuid('room_type_id')->constrained()->cascadeOnDelete();
+            $table->foreignUuid('room_unit_id')->nullable()->constrained()->nullOnDelete();
             $table->date('checkin_date');
             $table->date('checkout_date');
             $table->unsignedSmallInteger('guests');
+            $table->string('guest_name');
+            $table->string('guest_email');
+            $table->string('guest_phone')->nullable();
             $table->string('status')->default('confirmed');
             $table->decimal('total_price', 10, 2);
 
@@ -26,8 +31,8 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            // The availability query filters by room and a date-range overlap.
-            $table->index(['room_id', 'status', 'checkin_date', 'checkout_date'], 'bookings_availability_index');
+            $table->index(['room_type_id', 'status', 'checkin_date', 'checkout_date'], 'bookings_availability_index');
+            $table->index(['room_unit_id', 'status', 'checkin_date', 'checkout_date'], 'bookings_unit_availability_index');
         });
     }
 

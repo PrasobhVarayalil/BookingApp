@@ -6,15 +6,17 @@ namespace Tests\Feature;
 
 use App\Models\Booking;
 use App\Models\Hotel;
-use App\Models\Room;
+use App\Models\RoomType;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Laravel\Sanctum\Sanctum;
+use Tests\Concerns\CreatesRoomInventory;
 use Tests\TestCase;
 
 class BookingTest extends TestCase
 {
+    use CreatesRoomInventory;
     use RefreshDatabase;
 
     private string $checkin;
@@ -26,63 +28,78 @@ class BookingTest extends TestCase
         parent::setUp();
 
         $this->checkin = Carbon::today()->addDays(60)->toDateString();
-        $this->checkout = Carbon::today()->addDays(63)->toDateString(); // 3 nights
-    }
-
-    private function room(int $totalRooms = 1, float $price = 100): Room
-    {
-        return Room::factory()
-            ->forHotel(Hotel::factory()->inCity('Bookville')->create())
-            ->create(['price_per_night' => $price, 'max_occupancy' => 2, 'total_rooms' => $totalRooms]);
+        $this->checkout = Carbon::today()->addDays(63)->toDateString();
     }
 
     /**
      * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>
      */
-    private function payload(Room $room, array $overrides = []): array
+    private function payload(RoomType $roomType, array $overrides = []): array
     {
         return array_merge([
-            'room_id' => $room->id,
+            'room_type_id' => $roomType->id,
             'checkin_date' => $this->checkin,
             'checkout_date' => $this->checkout,
             'guests' => 2,
+            'guest_name' => 'Jane Guest',
+            'guest_email' => 'jane@example.com',
         ], $overrides);
     }
 
     public function test_guests_cannot_book_without_a_token(): void
     {
-        $this->postJson('/api/bookings', $this->payload($this->room()))->assertStatus(401);
+        $roomType = $this->roomTypeWithUnits(1, [], Hotel::factory()->inCity('Bookville')->create());
+
+        $this->postJson('/api/bookings', $this->payload($roomType))->assertStatus(401);
     }
 
-    public function test_booking_snapshots_the_total_price(): void
+    public function test_booking_snapshots_the_total_price_and_assigns_a_unit(): void
     {
         Sanctum::actingAs(User::factory()->create());
-        $room = $this->room(price: 100);
+        $roomType = $this->roomTypeWithUnits(1, ['price_per_night' => 100], Hotel::factory()->inCity('Bookville')->create());
 
-        $this->postJson('/api/bookings', $this->payload($room))
+        $this->postJson('/api/bookings', $this->payload($roomType))
             ->assertCreated()
             ->assertJsonPath('data.status', Booking::STATUS_CONFIRMED)
-            ->assertJsonPath('data.total_price', '300.00');
+            ->assertJsonPath('data.total_price', '300.00')
+            ->assertJsonPath('data.guest_name', 'Jane Guest');
 
-        $this->assertDatabaseHas('bookings', ['room_id' => $room->id, 'guests' => 2]);
+        $this->assertDatabaseHas('bookings', [
+            'room_type_id' => $roomType->id,
+            'room_unit_id' => $roomType->units->first()?->id,
+            'guests' => 2,
+        ]);
     }
 
-    public function test_booking_a_full_room_returns_422(): void
+    public function test_booking_a_full_room_type_returns_422(): void
     {
         Sanctum::actingAs(User::factory()->create());
-        $room = $this->room(totalRooms: 1);
-        Booking::factory()->forRoom($room)->stay($this->checkin, $this->checkout)->create();
+        $roomType = $this->roomTypeWithUnits(1, [], Hotel::factory()->inCity('Bookville')->create());
+        $unit = $roomType->units->first();
 
-        $this->postJson('/api/bookings', $this->payload($room))->assertStatus(422);
+        Booking::factory()->forType($roomType, $unit)->stay($this->checkin, $this->checkout)->create();
+
+        $this->postJson('/api/bookings', $this->payload($roomType))->assertStatus(422);
+    }
+
+    public function test_manual_room_selection_assigns_the_requested_unit(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+        $roomType = $this->roomTypeWithUnits(2, [], Hotel::factory()->inCity('Bookville')->create());
+        $second = $roomType->units[1];
+
+        $this->postJson('/api/bookings', $this->payload($roomType, ['room_unit_id' => $second->id]))
+            ->assertCreated()
+            ->assertJsonPath('data.room_unit.room_number', '102');
     }
 
     public function test_too_many_guests_is_a_validation_error(): void
     {
         Sanctum::actingAs(User::factory()->create());
-        $room = $this->room();
+        $roomType = $this->roomTypeWithUnits(1, ['max_occupancy' => 2], Hotel::factory()->inCity('Bookville')->create());
 
-        $this->postJson('/api/bookings', $this->payload($room, ['guests' => 5]))
+        $this->postJson('/api/bookings', $this->payload($roomType, ['guests' => 5]))
             ->assertStatus(422)
             ->assertJsonValidationErrorFor('guests');
     }
@@ -90,7 +107,7 @@ class BookingTest extends TestCase
     public function test_a_booking_reduces_the_next_search(): void
     {
         Sanctum::actingAs(User::factory()->create());
-        $room = $this->room(totalRooms: 2);
+        $roomType = $this->roomTypeWithUnits(2, [], Hotel::factory()->inCity('Bookville')->create());
 
         $url = '/api/search?'.http_build_query([
             'city' => 'Bookville',
@@ -101,8 +118,24 @@ class BookingTest extends TestCase
 
         $this->getJson($url)->assertJsonPath('data.0.rooms.0.available_units', 2);
 
-        $this->postJson('/api/bookings', $this->payload($room))->assertCreated();
+        $this->postJson('/api/bookings', $this->payload($roomType))->assertCreated();
 
         $this->getJson($url)->assertJsonPath('data.0.rooms.0.available_units', 1);
+    }
+
+    public function test_cancelled_bookings_free_the_unit_again(): void
+    {
+        Sanctum::actingAs(User::factory()->create());
+        $roomType = $this->roomTypeWithUnits(1, [], Hotel::factory()->inCity('Bookville')->create());
+
+        $response = $this->postJson('/api/bookings', $this->payload($roomType))->assertCreated();
+        $bookingId = $response->json('data.id');
+
+        $this->deleteJson("/api/bookings/{$bookingId}")->assertNoContent();
+
+        $this->assertDatabaseHas('bookings', [
+            'id' => $bookingId,
+            'status' => Booking::STATUS_CANCELLED,
+        ]);
     }
 }

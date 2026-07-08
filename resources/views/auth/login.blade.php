@@ -69,7 +69,7 @@
 
         <div class="alert alert-light border small mt-4 mb-0 d-flex align-items-center">
             <i class="bi bi-info-circle me-2"></i>
-            <div>Demo: <code>admin@example.com</code> / <code>password</code></div>
+            <div>Demo: <code>admin@terrastay.com</code> / <code>password</code></div>
         </div>
     </div>
 </div>

@@ -7,14 +7,16 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Services\BookingService;
 use App\Services\HotelService;
-use App\Services\RoomService;
+use App\Services\RoomTypeService;
+use App\Services\RoomUnitService;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
     public function __construct(
         private readonly HotelService $hotels,
-        private readonly RoomService $rooms,
+        private readonly RoomTypeService $roomTypes,
+        private readonly RoomUnitService $roomUnits,
         private readonly BookingService $bookings,
     ) {}
 
@@ -23,7 +25,8 @@ class DashboardController extends Controller
         return view('dashboard.index', [
             'stats' => [
                 'hotels' => $this->hotels->count(),
-                'rooms' => $this->rooms->count(),
+                'room_types' => $this->roomTypes->count(),
+                'room_units' => $this->roomUnits->count(),
                 'bookings' => $this->bookings->count(),
                 'average_rating' => $this->hotels->averageRating(),
             ],

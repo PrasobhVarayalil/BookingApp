@@ -16,11 +16,6 @@ use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Throwable;
 
-/**
- * Turns any exception thrown on an API route into a consistent
- * { "message": "..." } JSON body with the right status code. Registered from
- * bootstrap/app.php, so controllers never need their own try/catch.
- */
 class ApiExceptionRenderer
 {
     public function __invoke(Throwable $e, Request $request): ?JsonResponse
@@ -29,7 +24,6 @@ class ApiExceptionRenderer
             return null;
         }
 
-        // Validation already returns its own {message, errors} payload.
         if ($e instanceof ValidationException) {
             return null;
         }

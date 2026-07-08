@@ -34,7 +34,7 @@ interface HotelRepositoryInterface
     public function all(): Collection;
 
     /**
-     * Hotels in a city with their rooms (filtered to the requested occupancy)
+     * Hotels in a city with their room types (filtered to the requested occupancy)
      * eager-loaded, for the availability search.
      *
      * @return Collection<int, Hotel>

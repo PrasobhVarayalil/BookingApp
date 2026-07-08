@@ -17,49 +17,56 @@ class EloquentBookingRepository implements BookingRepositoryInterface
         return Booking::create($attributes);
     }
 
-    public function delete(Booking $booking): void
+    public function cancel(Booking $booking): void
     {
-        $booking->delete();
+        $booking->update(['status' => Booking::STATUS_CANCELLED]);
     }
 
     public function count(): int
     {
-        return Booking::count();
+        return Booking::where('status', Booking::STATUS_CONFIRMED)->count();
     }
 
     public function paginateWithRoomAndHotel(int $perPage): LengthAwarePaginator
     {
         return Booking::query()
-            ->with('room.hotel')
+            ->with(['roomType.hotel', 'roomUnit'])
             ->latest()
             ->paginate($perPage);
     }
 
-    public function overlappingForRooms(array $roomIds, string $checkin, string $checkout): Collection
+    public function overlappingForRoomTypes(array $roomTypeIds, string $checkin, string $checkout): Collection
     {
-        if ($roomIds === []) {
+        if ($roomTypeIds === []) {
             return collect();
         }
 
         return $this->overlapping($checkin, $checkout)
-            ->whereIn('room_id', $roomIds)
-            ->get(['id', 'room_id', 'checkin_date', 'checkout_date'])
-            ->groupBy('room_id');
+            ->whereIn('room_type_id', $roomTypeIds)
+            ->get(['id', 'room_type_id', 'room_unit_id', 'checkin_date', 'checkout_date'])
+            ->groupBy('room_type_id');
     }
 
-    public function overlappingForRoom(string $roomId, string $checkin, string $checkout, bool $lock = false): Collection
+    public function overlappingForUnit(string $roomUnitId, string $checkin, string $checkout, bool $lock = false): Collection
     {
         return $this->overlapping($checkin, $checkout)
-            ->where('room_id', $roomId)
+            ->where('room_unit_id', $roomUnitId)
             ->when($lock, fn (Builder $q) => $q->lockForUpdate())
-            ->get(['id', 'room_id', 'checkin_date', 'checkout_date']);
+            ->get(['id', 'room_type_id', 'room_unit_id', 'checkin_date', 'checkout_date']);
+    }
+
+    public function overlappingUnitIdsForType(string $roomTypeId, string $checkin, string $checkout): array
+    {
+        return $this->overlapping($checkin, $checkout)
+            ->where('room_type_id', $roomTypeId)
+            ->whereNotNull('room_unit_id')
+            ->pluck('room_unit_id')
+            ->unique()
+            ->values()
+            ->all();
     }
 
     /**
-     * Half-open overlap: a confirmed booking clashes with [checkin, checkout)
-     * when it starts before our checkout and ends after our checkin. The night
-     * of checkout is therefore free.
-     *
      * @return Builder<Booking>
      */
     private function overlapping(string $checkin, string $checkout): Builder
