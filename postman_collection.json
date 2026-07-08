@@ -1,0 +1,161 @@
+{
+  "info": {
+    "name": "Hotel Booking API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000/api" },
+    { "key": "token", "value": "" },
+    { "key": "hotel_id", "value": "" },
+    { "key": "room_id", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    pm.collectionVariables.set('token', pm.response.json().token);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"password\"\n}"
+        },
+        "url": "{{base_url}}/login"
+      }
+    },
+    {
+      "name": "List Hotels (public)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{base_url}}/hotels?city=Dubai&rating=4",
+          "host": ["{{base_url}}"],
+          "path": ["hotels"],
+          "query": [
+            { "key": "city", "value": "Dubai" },
+            { "key": "rating", "value": "4" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Create Hotel",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "    pm.collectionVariables.set('hotel_id', pm.response.json().data.id);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"New Hotel\",\n  \"city\": \"Dubai\",\n  \"country\": \"United Arab Emirates\",\n  \"rating\": 4\n}"
+        },
+        "url": "{{base_url}}/hotels"
+      }
+    },
+    {
+      "name": "Create Room",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "    pm.collectionVariables.set('room_id', pm.response.json().data.id);",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"hotel_id\": \"{{hotel_id}}\",\n  \"name\": \"Executive Suite\",\n  \"price_per_night\": 150.00,\n  \"max_occupancy\": 3,\n  \"total_rooms\": 5\n}"
+        },
+        "url": "{{base_url}}/rooms"
+      }
+    },
+    {
+      "name": "Search Availability (public)",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Accept", "value": "application/json" }],
+        "url": {
+          "raw": "{{base_url}}/search?city=Dubai&checkin_date=2026-08-01&checkout_date=2026-08-04&guests=2",
+          "host": ["{{base_url}}"],
+          "path": ["search"],
+          "query": [
+            { "key": "city", "value": "Dubai" },
+            { "key": "checkin_date", "value": "2026-08-01" },
+            { "key": "checkout_date", "value": "2026-08-04" },
+            { "key": "guests", "value": "2" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Create Booking",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"room_id\": \"{{room_id}}\",\n  \"checkin_date\": \"2026-08-01\",\n  \"checkout_date\": \"2026-08-04\",\n  \"guests\": 2\n}"
+        },
+        "url": "{{base_url}}/bookings"
+      }
+    },
+    {
+      "name": "Logout",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{base_url}}/logout"
+      }
+    }
+  ]
+}
