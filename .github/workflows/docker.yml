@@ -1,0 +1,48 @@
+name: Docker
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  sail:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: php-actions/composer@v6
+        with:
+          php_version: '8.3'
+          args: --no-interaction --prefer-dist
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          cat .env.docker.example >> .env
+          echo "WWWGROUP=1000" >> .env
+          echo "WWWUSER=1000" >> .env
+
+      - name: Build and start Sail
+        run: |
+          ./vendor/bin/sail build
+          ./vendor/bin/sail up -d
+
+      - name: Bootstrap application
+        run: |
+          ./vendor/bin/sail composer install --no-interaction --prefer-dist
+          ./vendor/bin/sail artisan key:generate --force
+          ./vendor/bin/sail artisan migrate --seed --force
+
+      - name: Run tests
+        run: ./vendor/bin/sail test
+
+      - name: Smoke test web login page
+        run: |
+          curl -fsS http://localhost:8080/login | grep -qi "TerraStay"
+
+      - name: Tear down
+        if: always()
+        run: ./vendor/bin/sail down -v

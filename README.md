@@ -23,7 +23,7 @@ same service layer — business logic is never duplicated between them.
 - **UUID v4** primary keys, **soft deletes**, and audit columns via a shared `AppModel`.
 - **Overbooking-safe** booking writes (transaction + `lockForUpdate`).
 - **Cached search** with version-based invalidation.
-- **33 tests** (unit + feature) green on SQLite in-memory.
+- **44 tests** (unit + feature) green on SQLite in-memory.
 
 ---
 
@@ -33,11 +33,11 @@ same service layer — business logic is never duplicated between them.
 | ---------- | ----------------------------------------------------------- |
 | Framework  | Laravel 13 (PHP 8.3+)                                       |
 | Auth       | Laravel Sanctum (tokens for API, session for web)           |
-| Database   | SQLite locally; MySQL 8 via Docker                          |
+| Database   | SQLite locally; MySQL 8 via Laravel Sail                  |
 | Keys       | UUID v4 primary keys + soft deletes + audit columns         |
 | Frontend   | Blade + Bootstrap 5, Tom Select & Bootstrap Icons (CDN)     |
 | Cache      | Redis (search results, 60s TTL + version invalidation)      |
-| Container  | Docker Compose (PHP-FPM + Nginx + MySQL + Redis)            |
+| Container  | Laravel Sail (PHP 8.3 + MySQL 8 + Redis)                    |
 | Code style | PSR-12 via Laravel Pint                                     |
 
 ---
@@ -108,89 +108,142 @@ are orphaned and recomputed on the next request (they also expire naturally on t
 
 ---
 
-## Getting started — Normal (no Docker)
+## Prerequisites
 
-**Requirements:** PHP 8.3+, Composer 2, SQLite (default) or MySQL, **Redis**.
+| Tool | Local dev | Laravel Sail (Docker) |
+| ---- | --------- | --------------------- |
+| PHP 8.3+ | required | included in container |
+| Composer 2 | required | optional (runs in container) |
+| Redis | required (`CACHE_STORE=redis`) | included in container |
+| SQLite | default DB driver | — |
+| Docker Desktop | optional | required (with WSL 2 on Windows) |
 
-Start Redis locally (pick one):
+**Default admin** (seeded): `admin@terrastay.com` / `password`
 
-```bash
-docker run -d --name terrastay-redis -p 6379:6379 redis:alpine
-# or: docker compose up -d redis   (uses host port 6380 — set REDIS_PORT=6380)
-```
+---
+
+## Installation
+
+Pick one path. Do **not** mix SQLite and Sail MySQL settings in `.env` at the same time — use `.env.example` for local and merge `.env.docker.example` when switching to Sail.
+
+### Option A — Local (no Docker)
+
+Best for day-to-day coding on the host machine. Uses **SQLite** + **Redis on `127.0.0.1:6379`**.
 
 ```bash
 composer install
-cp .env.example .env       # Windows: copy .env.example .env
+cp .env.example .env          # Windows: copy .env.example .env
 php artisan key:generate
 php artisan migrate:fresh --seed
 php artisan serve
 ```
 
-`.env` defaults to `CACHE_STORE=redis` with `REDIS_CLIENT=predis` (no PHP extension required).
+Open **http://127.0.0.1:8000/login**.
 
-Open http://localhost:8000 and sign in with the seeded admin:
+**Redis** must be running (search caching depends on it):
 
-| Email               | Password   |
-| ------------------- | ---------- |
-| admin@terrastay.com | password   |
+```bash
+# one-off Docker Redis
+docker run -d --name terrastay-redis -p 6379:6379 redis:alpine
+```
 
-The seeder creates hotels across Dubai, London, Paris, Tokyo, and Mumbai with room types, unit
-numbers, and sample bookings so search results vary by date.
+**Windows helper** — starts portable Redis + `artisan serve` in one command:
 
----
+```powershell
+.\run-local.ps1 up       # start Redis + dev server
+.\run-local.ps1 status   # check both
+.\run-local.ps1 fresh    # migrate:fresh --seed + start
+.\run-local.ps1 down     # stop Redis + server
+```
 
-## Getting started — Docker
+### Option B — Laravel Sail (Docker)
 
-Services defined in `docker-compose.yml`:
+Uses [Laravel Sail](https://laravel.com/docs/sail): PHP 8.3, MySQL 8, and Redis in containers. App is served on **port 8080**.
 
-| Service | Image        | Purpose            | Host port |
-| ------- | ------------ | ------------------ | --------- |
-| app     | PHP 8.3 FPM  | Laravel app        | —         |
-| nginx   | nginx:alpine | Web server         | **8080**  |
-| mysql   | mysql:8.0    | Database           | **3307**  |
-| redis   | redis:alpine | Cache              | **6380**  |
+| Service       | Purpose   | Host port |
+| ------------- | --------- | --------- |
+| laravel.test  | App + web | **8080**  |
+| mysql         | Database  | **3307**  |
+| redis         | Cache     | **6380**  |
 
-**1 — Create the env file and point it at Docker services**
+**1 — Environment**
 
 ```bash
 cp .env.example .env
+# merge Sail overrides from .env.docker.example into .env
 ```
 
-Set these keys in `.env`:
+Required Sail keys (also in `.env.docker.example`):
 
 ```env
 APP_URL=http://localhost:8080
+APP_PORT=8080
 DB_CONNECTION=mysql
 DB_HOST=mysql
-DB_PORT=3306
 DB_DATABASE=hotel_booking
-DB_USERNAME=hotel
-DB_PASSWORD=secret
+DB_USERNAME=sail
+DB_PASSWORD=password
 CACHE_STORE=redis
 REDIS_HOST=redis
 REDIS_CLIENT=predis
+FORWARD_DB_PORT=3307
+FORWARD_REDIS_PORT=6380
+WWWGROUP=1000
+WWWUSER=1000
 ```
 
-**2 — Build and start**
+**2 — Build, start, bootstrap**
+
+Linux / macOS / WSL:
 
 ```bash
-make build
-make up
-make setup
+./vendor/bin/sail build
+./vendor/bin/sail up -d
+./vendor/bin/sail artisan migrate --seed
 ```
 
-Open **http://localhost:8080** and log in at `/login`.
+Windows PowerShell (use `sail.ps1` — `./vendor/bin/sail` does **not** work in native PowerShell):
 
-**Handy Make commands**
-
-```bash
-make test        # run the test suite
-make pint        # check code style
-make pint-fix    # auto-fix code style
-make migrate     # re-seed database
-make down        # stop containers
+```powershell
+.\sail.ps1 build
+.\sail.ps1 up
+.\sail.ps1 setup
 ```
+
+(`docker.ps1` is an alias for `sail.ps1`.)
+
+Open **http://localhost:8080/login**.
+
+**Handy Sail commands**
+
+| Task | Linux/macOS/WSL | Windows PowerShell |
+| ---- | --------------- | ------------------ |
+| Start | `./vendor/bin/sail up -d` | `.\sail.ps1 up` |
+| Stop | `./vendor/bin/sail down` | `.\sail.ps1 down` |
+| Tests | `./vendor/bin/sail test` | `.\sail.ps1 test` |
+| Pint | `./vendor/bin/sail pint --test` | `.\sail.ps1 pint` |
+| Shell | `./vendor/bin/sail shell` | `.\sail.ps1 shell` |
+| Logs | `./vendor/bin/sail logs -f` | `.\sail.ps1 logs` |
+
+> Sail replaces a hand-rolled Nginx + PHP-FPM Compose stack for standard Laravel DX. Production would still use separate web/PHP services behind a reverse proxy.
+
+### Switching between local and Sail
+
+1. **Local → Sail:** merge `.env.docker.example` into `.env`, then `.\sail.ps1 setup`.
+2. **Sail → Local:** restore SQLite keys from `.env.example` (`DB_CONNECTION=sqlite`, `REDIS_HOST=127.0.0.1`), then `php artisan migrate:fresh --seed`.
+
+---
+
+## Getting started — quick reference
+
+The sections above are the full install guide. Short version:
+
+**Local:** `composer install` → copy `.env` → `key:generate` → `migrate:fresh --seed` → `php artisan serve` → http://127.0.0.1:8000/login
+
+**Sail:** merge `.env.docker.example` → `.\sail.ps1 setup` (Windows) or `./vendor/bin/sail up -d` + migrate (Linux) → http://localhost:8080/login
+
+The seeder creates hotels across Dubai, London, Paris, Tokyo, and Mumbai with room types, unit
+numbers, and sample bookings so search results vary by date.
 
 ---
 
@@ -259,17 +312,31 @@ removed and the UI shows a clear message instead.
 ## Tests & code style
 
 ```bash
-php artisan test                 # 33 tests on SQLite in-memory
+php artisan test                 # 44 tests on SQLite in-memory (local)
 ./vendor/bin/pint --test         # check PSR-12 style
 ./vendor/bin/pint                # auto-fix style
 ```
 
+**In Sail / Docker:**
+
+```bash
+./vendor/bin/sail test           # Linux/macOS/WSL
+.\sail.ps1 test                  # Windows PowerShell
+```
+
+Verified: **44 tests, 109 assertions** pass locally and inside the Sail container.
+
 The suite covers availability (no bookings, fully booked, partial overlap, occupancy filtering,
 pricing), auth (web redirect, API token, 401 on protected routes), the booking flow (creation,
-422 when full, cache invalidation, cancellation), inventory delete guards, and audit-trail /
-soft-delete behaviour on the base model.
+422 when full, cache invalidation, cancellation), inventory delete guards, activity logging,
+detail/view pages, dashboard charts, and audit-trail / soft-delete behaviour on the base model.
 
-CI runs tests + Pint on every push via `.github/workflows/ci.yml`.
+**CI** (`.github/workflows/`):
+
+| Workflow | Runs on push/PR |
+| -------- | --------------- |
+| `ci.yml` | PHPUnit + Pint on the host (SQLite) |
+| `docker.yml` | Full Sail build, migrate, test, and smoke check on port 8080 |
 
 ---
 
@@ -280,12 +347,25 @@ Import both files from the project root:
 - `postman_collection.json`
 - `postman_environment.json` (vars: `base_url`, `token`, `hotel_id`, `room_type_id`, `booking_id`)
 
-`base_url` defaults to `http://localhost:8000/api` (no-Docker run); change to
-`http://localhost:8080/api` if you run via Docker.
+`base_url` defaults to `http://localhost:8000/api` (local run); change to
+`http://localhost:8080/api` when running via Sail.
 
 Run the requests in order — **Login → Create Hotel → Create Room Type → Search → Create Booking**.
 Test scripts capture the returned token and UUIDs into collection/environment variables so the
 chain works without pasting IDs by hand.
+
+---
+
+## Troubleshooting
+
+| Symptom | Fix |
+| ------- | --- |
+| `connection refused` on Redis (local) | Start Redis: `docker run -d -p 6379:6379 redis:alpine` or `.\run-local.ps1 up` |
+| `./vendor/bin/sail` fails on Windows PowerShell | Use `.\sail.ps1` instead (Sail's bash script needs WSL/Linux) |
+| Docker "engine not running" | Open Docker Desktop, wait for **Engine running** |
+| `wsl --update` needs admin | Run elevated: `wsl --update --web-download` |
+| Local `artisan serve` DB errors after Sail | `.env` still points at `DB_HOST=mysql` — switch back to SQLite (see Installation) |
+| First Sail build slow / fails | Needs internet; retry `.\sail.ps1 build` |
 
 ---
 
