@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TerraStay — Developer Reference</title>
+  <style>
+    :root {
+      --ink: #1a1a2e;
+      --muted: #4a5568;
+      --accent: #2563eb;
+      --border: #e2e8f0;
+      --bg-code: #f8fafc;
+      --bg-table-head: #eff6ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+      color: var(--ink);
+      line-height: 1.55;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem 2.5rem;
+      font-size: 11pt;
+    }
+    h1 {
+      font-size: 1.75rem;
+      margin: 0 0 0.25rem;
+      color: var(--accent);
+      border-bottom: 3px solid var(--accent);
+      padding-bottom: 0.5rem;
+    }
+    h2 {
+      font-size: 1.2rem;
+      margin: 2rem 0 0.75rem;
+      color: var(--ink);
+      page-break-after: avoid;
+    }
+    h3 {
+      font-size: 1rem;
+      margin: 1.25rem 0 0.5rem;
+      color: var(--muted);
+      page-break-after: avoid;
+    }
+    h4 {
+      font-size: 0.95rem;
+      margin: 1rem 0 0.4rem;
+      page-break-after: avoid;
+    }
+    p, li { margin: 0.4rem 0; }
+    .subtitle {
+      font-size: 1.1rem;
+      color: var(--muted);
+      margin: 0 0 1rem;
+    }
+    .meta {
+      background: var(--bg-code);
+      border-left: 4px solid var(--accent);
+      padding: 0.75rem 1rem;
+      margin: 1rem 0 1.5rem;
+      font-size: 0.95rem;
+    }
+    .meta strong { display: inline-block; min-width: 5.5rem; }
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 1.5rem 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.75rem 0 1rem;
+      font-size: 0.9rem;
+      page-break-inside: avoid;
+    }
+    th, td {
+      border: 1px solid var(--border);
+      padding: 0.45rem 0.6rem;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: var(--bg-table-head);
+      font-weight: 600;
+    }
+    tr:nth-child(even) td { background: #fafbfc; }
+    pre, code {
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 0.85rem;
+    }
+    pre {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.75rem 1rem;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      page-break-inside: avoid;
+      margin: 0.5rem 0 1rem;
+      line-height: 1.4;
+    }
+    code {
+      background: #eef2ff;
+      padding: 0.1rem 0.35rem;
+      border-radius: 3px;
+    }
+    ul { padding-left: 1.25rem; }
+    .badge {
+      display: inline-block;
+      background: #dcfce7;
+      color: #166534;
+      font-size: 0.8rem;
+      padding: 0.1rem 0.45rem;
+      border-radius: 3px;
+      font-weight: 600;
+    }
+    .section-intro { color: var(--muted); margin-bottom: 0.75rem; }
+    .footer {
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-style: italic;
+    }
+    @media print {
+      body { padding: 0; font-size: 10pt; }
+      h2 { page-break-before: auto; }
+      pre { font-size: 8pt; }
+      table { font-size: 8.5pt; }
+    }
+  </style>
+</head>
+<body>
+
+<h1>TerraStay Hotel Booking System</h1>
+<p class="subtitle">Developer Reference — Flows &amp; Database Design</p>
+
+<div class="meta">
+  <div><strong>Project:</strong> Hotel Inventory &amp; Booking System</div>
+  <div><strong>Stack:</strong> Laravel 13 · PHP 8.3 · Sanctum · Blade · MySQL/SQLite · Redis</div>
+  <div><strong>Repo:</strong> BookingApp (hotel-booking-temp)</div>
+  <div><strong>Login:</strong> admin@terrastay.com / password</div>
+</div>
+
+<h2>1. What This Project Is</h2>
+<p class="section-intro">A hotel inventory and <strong>date-aware availability search</strong> system with:</p>
+<ul>
+  <li><strong>Web UI</strong> — session auth, Blade + Bootstrap 5</li>
+  <li><strong>JSON API</strong> — Sanctum token auth</li>
+  <li><strong>Shared service layer</strong> — business logic is never duplicated between web and API</li>
+</ul>
+
+<hr>
+
+<h2>2. Brief Spec vs Implementation</h2>
+
+<table>
+  <thead>
+    <tr><th>Brief / spec idea</th><th>What we built</th><th>Notes</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>rooms</code> table with <code>available_rooms</code> integer</td>
+      <td><code>room_types</code> + <code>room_units</code> + <code>bookings</code></td>
+      <td>Availability is <strong>computed per date range</strong>, not a static counter</td>
+    </tr>
+    <tr>
+      <td>Hotel CRUD</td>
+      <td>Web full CRUD + API list/create</td>
+      <td>API has no update/delete/show</td>
+    </tr>
+    <tr>
+      <td>Room CRUD</td>
+      <td>Web full CRUD + API create</td>
+      <td>Room = type + physical unit numbers</td>
+    </tr>
+    <tr>
+      <td>Search by city + dates</td>
+      <td><code>SearchService</code> with overlap algorithm</td>
+      <td>Half-open interval <code>[checkin, checkout)</code></td>
+    </tr>
+    <tr>
+      <td>Sanctum API auth</td>
+      <td><span class="badge">✓</span> Token create/revoke</td>
+      <td>Web uses session guard</td>
+    </tr>
+    <tr>
+      <td>Cache search results</td>
+      <td><span class="badge">✓</span> Redis, 60s TTL + version bump</td>
+      <td>Portable invalidation without cache tags</td>
+    </tr>
+    <tr>
+      <td>Docker</td>
+      <td><span class="badge">✓</span> Laravel Sail (PHP 8.3, MySQL 8, Redis)</td>
+      <td><code>compose.yaml</code> + <code>sail.ps1</code> on Windows</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>Enhancements beyond the brief</h3>
+<table>
+  <thead>
+    <tr><th>Enhancement</th><th>Why it matters</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><strong>UUID v4 primary keys</strong></td><td>Safer public IDs; consistent across domain tables</td></tr>
+    <tr><td><strong>Soft deletes</strong></td><td>Hotels, room types, units, bookings recoverable</td></tr>
+    <tr><td><strong>Audit columns</strong></td><td><code>created_by</code>, <code>updated_by</code>, <code>deleted_by</code> on all domain models</td></tr>
+    <tr><td><strong>Spatie activity log</strong></td><td>Full change history + <code>/activity</code> admin page</td></tr>
+    <tr><td><strong>Repository pattern</strong></td><td>Services depend on interfaces; Eloquent hidden behind contracts</td></tr>
+    <tr><td><strong>Row-level locking</strong></td><td><code>lockForUpdate()</code> on booking create prevents double-booking</td></tr>
+    <tr><td><strong>Countries / cities lookup</strong></td><td>Seeded reference data for form dropdowns</td></tr>
+    <tr><td><strong>Dashboard charts</strong></td><td>Booking trends, occupancy %, top hotels/cities</td></tr>
+    <tr><td><strong>Detail/show pages</strong></td><td>Hotels, room types, bookings with audit panels</td></tr>
+    <tr><td><strong>Rate limiting</strong></td><td>Login, search, API group throttles</td></tr>
+    <tr><td><strong>44 automated tests</strong></td><td>Unit + feature coverage on SQLite in-memory</td></tr>
+  </tbody>
+</table>
+
+<hr>
+
+<h2>3. Architecture</h2>
+<pre>HTTP Request
+    │
+    ▼
+┌─────────────────────────────────────────────────────────┐
+│  Middleware (auth, throttle, CSRF on web)               │
+└─────────────────────────────────────────────────────────┘
+    │
+    ▼
+┌──────────────────┐     ┌──────────────────┐
+│  Web Controllers │     │  API Controllers │
+│  (redirect/view) │     │  (JSON + status) │
+└────────┬─────────┘     └────────┬─────────┘
+         │                        │
+         └──────────┬─────────────┘
+                    ▼
+         ┌──────────────────────┐
+         │  Form Requests       │  ← validation + authorize()
+         └──────────┬───────────┘
+                    ▼
+         ┌──────────────────────┐
+         │  Services            │  ← business logic
+         │  Hotel · RoomType    │
+         │  Booking · Search    │
+         │  Dashboard · Cache   │
+         └──────────┬───────────┘
+                    ▼
+         ┌──────────────────────┐
+         │  Repositories        │  ← DB queries only
+         │  (Eloquent impl.)    │
+         └──────────┬───────────┘
+                    ▼
+         ┌──────────────────────┐
+         │  Eloquent Models     │
+         │  + relationships     │
+         └──────────────────────┘</pre>
+
+<h3>Key folders</h3>
+<table>
+  <thead><tr><th>Path</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>app/Http/Controllers/Web/</code></td><td>Blade pages, redirects, flash messages</td></tr>
+    <tr><td><code>app/Http/Controllers/Api/</code></td><td>JSON responses, HTTP status codes</td></tr>
+    <tr><td><code>app/Http/Requests/</code></td><td>Validation rules</td></tr>
+    <tr><td><code>app/Http/Resources/</code></td><td>API response shape</td></tr>
+    <tr><td><code>app/Services/</code></td><td>Business logic</td></tr>
+    <tr><td><code>app/Repositories/</code></td><td>Data access</td></tr>
+    <tr><td><code>app/Models/AppModel.php</code></td><td>Base model: UUID, soft delete, audit, activity log</td></tr>
+  </tbody>
+</table>
+
+<hr>
+
+<h2>4. Database Design</h2>
+
+<h3>4.1 Entity Relationship (core domain)</h3>
+<pre>┌──────────┐       ┌─────────────┐       ┌─────────────┐       ┌──────────┐
+│  users   │       │   hotels    │       │ room_types  │       │bookings  │
+│ (bigint) │◄──────│   (uuid)    │──1─*──│   (uuid)    │──1─*──│  (uuid)  │
+└──────────┘ audit │ name        │       │ hotel_id FK │       │ room_type│
+                  │ city        │       │ name        │       │ room_unit│
+                  │ country     │       │ price/night │       │ dates    │
+                  │ rating      │       │ max_guests  │       │ guest_*  │
+                  └─────────────┘       └──────┬──────┘       └────┬─────┘
+                                               │ 1                 │
+                                               │ *                 │ 0..1
+                                        ┌──────▼──────┐       ┌──────▼──────┐
+                                        │ room_units  │◄──────│  (unit FK)  │
+                                        │   (uuid)    │       └─────────────┘
+                                        │ room_number │
+                                        │ status      │
+                                        └─────────────┘
+
+┌───────────┐  1──*  ┌────────┐
+│ countries │────────│ cities │   ← lookup tables (hotels store city/country as strings)
+│  (uuid)   │        │ (uuid) │
+└───────────┘        └────────┘</pre>
+
+<h3>4.2 Table reference</h3>
+
+<h4>hotels</h4>
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>UUID</td><td>PK</td></tr>
+    <tr><td><code>name</code></td><td>string</td><td></td></tr>
+    <tr><td><code>city</code></td><td>string</td><td>indexed</td></tr>
+    <tr><td><code>country</code></td><td>string</td><td></td></tr>
+    <tr><td><code>rating</code></td><td>tinyint 1–5</td><td></td></tr>
+    <tr><td><code>created_by</code>, <code>updated_by</code>, <code>deleted_by</code></td><td>bigint nullable</td><td>→ users.id</td></tr>
+    <tr><td><code>deleted_at</code></td><td>timestamp</td><td>soft delete</td></tr>
+  </tbody>
+</table>
+<p><strong>Indexes:</strong> <code>city</code>, <code>(city, rating)</code></p>
+
+<h4>room_types <em>(migration: create_rooms_table)</em></h4>
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>UUID</td><td>PK</td></tr>
+    <tr><td><code>hotel_id</code></td><td>UUID</td><td>FK → hotels, cascade delete</td></tr>
+    <tr><td><code>name</code></td><td>string</td><td>e.g. "Deluxe King"</td></tr>
+    <tr><td><code>price_per_night</code></td><td>decimal(10,2)</td><td></td></tr>
+    <tr><td><code>max_occupancy</code></td><td>smallint</td><td></td></tr>
+    <tr><td>audit + soft delete</td><td></td><td>same pattern as hotels</td></tr>
+  </tbody>
+</table>
+
+<h4>room_units</h4>
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>UUID</td><td>PK</td></tr>
+    <tr><td><code>room_type_id</code></td><td>UUID</td><td>FK → room_types, cascade</td></tr>
+    <tr><td><code>room_number</code></td><td>string</td><td>e.g. "101", "102"</td></tr>
+    <tr><td><code>status</code></td><td>string</td><td>available · maintenance · blocked</td></tr>
+    <tr><td>audit + soft delete</td><td></td><td></td></tr>
+  </tbody>
+</table>
+<p><strong>Unique:</strong> <code>(room_type_id, room_number)</code> · <strong>Index:</strong> <code>(room_type_id, status)</code></p>
+
+<h4>bookings</h4>
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td><code>id</code></td><td>UUID</td><td>PK</td></tr>
+    <tr><td><code>booking_reference</code></td><td>string</td><td>unique, e.g. BK-20260801-A3F2</td></tr>
+    <tr><td><code>room_type_id</code></td><td>UUID</td><td>FK → room_types</td></tr>
+    <tr><td><code>room_unit_id</code></td><td>UUID nullable</td><td>FK → room_units, null on delete</td></tr>
+    <tr><td><code>checkin_date</code> / <code>checkout_date</code></td><td>date</td><td>checkout day is <strong>free</strong></td></tr>
+    <tr><td><code>guests</code></td><td>smallint</td><td></td></tr>
+    <tr><td><code>guest_name</code>, <code>guest_email</code></td><td>string</td><td></td></tr>
+    <tr><td><code>guest_phone</code></td><td>string nullable</td><td></td></tr>
+    <tr><td><code>status</code></td><td>string</td><td>confirmed · cancelled</td></tr>
+    <tr><td><code>total_price</code></td><td>decimal(10,2)</td><td>snapshot at booking time</td></tr>
+    <tr><td>audit + soft delete</td><td></td><td></td></tr>
+  </tbody>
+</table>
+<p><strong>Availability indexes:</strong></p>
+<ul>
+  <li><code>(room_type_id, status, checkin_date, checkout_date)</code></li>
+  <li><code>(room_unit_id, status, checkin_date, checkout_date)</code></li>
+</ul>
+
+<h4>countries / cities</h4>
+<p>Reference data for dropdowns. Hotels store <code>city</code> and <code>country</code> as plain strings (denormalized for search simplicity).</p>
+<table>
+  <thead><tr><th>cities</th><th></th></tr></thead>
+  <tbody>
+    <tr><td><code>country_id</code></td><td>FK → countries</td></tr>
+    <tr><td><code>name</code></td><td>unique per country</td></tr>
+  </tbody>
+</table>
+
+<h4>activity_log (Spatie)</h4>
+<table>
+  <thead><tr><th>Column</th><th>Purpose</th></tr></thead>
+  <tbody>
+    <tr><td><code>subject_id/type</code></td><td>What changed (morph)</td></tr>
+    <tr><td><code>causer_id/type</code></td><td>Who changed it (morph → User)</td></tr>
+    <tr><td><code>event</code></td><td>created / updated / deleted</td></tr>
+    <tr><td><code>properties</code></td><td>JSON old/new values</td></tr>
+    <tr><td><code>log_name</code></td><td>grouping filter</td></tr>
+  </tbody>
+</table>
+
+<h4>users + personal_access_tokens</h4>
+<ul>
+  <li><code>users</code>: standard Laravel auth (bigint PK)</li>
+  <li><code>personal_access_tokens</code>: Sanctum API tokens (morph to User)</li>
+</ul>
+
+<h3>4.3 Base model behaviour (AppModel)</h3>
+<p>All domain models extend <code>AppModel</code>:</p>
+<ol>
+  <li><strong>UUID v4</strong> primary key (<code>HasVersion4Uuids</code>)</li>
+  <li><strong>Soft deletes</strong> (<code>SoftDeletes</code>)</li>
+  <li><strong>Activity logging</strong> — logs fillable attributes, dirty only</li>
+  <li><strong>Audit auto-stamp:</strong> <code>created_by</code> / <code>updated_by</code> on save; <code>deleted_by</code> on soft delete</li>
+</ol>
+<p>Relationships: <code>creator()</code>, <code>updater()</code>, <code>deleter()</code> → <code>User</code></p>
+
+<hr>
+
+<h2>5. Application Flows</h2>
+
+<h3>5.1 Web authentication (session)</h3>
+<pre>Browser → GET /login → AuthController@showLogin → Blade form
+Browser → POST /login → LoginRequest validates
+         → Auth::attempt() → session regenerate
+         → ActivityLogger "Logged in via web"
+         → redirect /dashboard
+
+POST /logout → ActivityLogger → Auth::logout()
+            → session invalidate → redirect /login</pre>
+<ul>
+  <li>Middleware: <code>guest</code> on login, <code>auth</code> on all app pages</li>
+  <li>CSRF protection on all POST/PUT/DELETE</li>
+  <li>Rate limit: 5 attempts/min on login</li>
+</ul>
+
+<h3>5.2 API authentication (Sanctum)</h3>
+<pre>POST /api/login → LoginRequest → Hash::check
+              → 401 if fail
+              → 200 { token, user } + activity log
+
+Protected routes → Authorization: Bearer {token}
+                 → auth:sanctum middleware
+
+POST /api/logout → revoke current token → 204</pre>
+
+<h3>5.3 Hotel CRUD</h3>
+<p><strong>Web:</strong> list (filters: country, city, rating) → create/edit modal → show detail page<br>
+<strong>API:</strong> <code>GET /api/hotels</code> (public, paginated) · <code>POST /api/hotels</code> (token, 201)</p>
+<p><strong>Delete guard:</strong> cannot delete hotel if it has room types (<code>ResourceInUseException</code> → 409)</p>
+<pre>HotelController → StoreHotelRequest → HotelService
+               → HotelRepository → Hotel model</pre>
+
+<h3>5.4 Room type CRUD</h3>
+<p>A "room" in the UI = <strong>room type</strong> (category) + <strong>room units</strong> (physical numbers).</p>
+<pre>StoreRoomTypeRequest → RoomTypeService::create()
+  → insert room_types row
+  → bulk insert room_units (parsed from "101, 102, 103")
+  → SearchResultCache::bump()</pre>
+<p><strong>Delete guard:</strong> cannot delete room type with existing bookings.</p>
+
+<h3>5.5 Search availability</h3>
+<pre>SearchRequest (city, checkin, checkout, guests)
+    │
+    ▼
+SearchService::search()
+    │
+    ├─► Build cache key: search:{version}:{md5(params)}
+    ├─► Cache miss? Run query:
+    │       HotelRepository::availableInCity()
+    │       For each room type:
+    │         BookingService::availableUnitsForStay()
+    │         Filter by max_occupancy >= guests
+    │         Calculate nights × price_per_night
+    └─► Return hotels with available room types + unit numbers</pre>
+<p><strong>Overlap rule (half-open [checkin, checkout)):</strong></p>
+<pre>A unit is BLOCKED if a confirmed booking exists where:
+  existing.checkin_date  &lt; requested.checkout_date
+  AND existing.checkout_date &gt; requested.checkin_date</pre>
+<ul>
+  <li>Cancelled bookings do <strong>not</strong> block availability</li>
+  <li>Only units with <code>status = available</code> are searchable</li>
+  <li>Checkout day is free for the next guest</li>
+  <li><strong>Cache:</strong> 60s TTL; inventory/booking changes bump version key</li>
+</ul>
+
+<h3>5.6 Booking create (overbooking-safe)</h3>
+<pre>StoreBookingRequest → BookingService::create() [DB::transaction]
+    │
+    ├─► RoomTypeRepository::findForUpdate()     ← row lock
+    ├─► Validate guests &lt;= max_occupancy
+    ├─► resolveUnit():
+    │     If room_unit_id provided → lock that unit, verify free
+    │     Else → auto-pick first free unit for stay
+    ├─► Generate reference: BK-{Ymd}-{RANDOM4}
+    ├─► total_price = price_per_night × nights
+    ├─► Insert booking (status: confirmed)
+    └─► SearchResultCache::bump()</pre>
+<p><strong>Cancel:</strong> sets <code>status = cancelled</code> (does not hard-delete). Frees the unit for future searches.</p>
+
+<h3>5.7 Dashboard</h3>
+<pre>DashboardController → aggregates:
+  - Hotel count, room type count, unit count
+  - Confirmed bookings, average rating
+  - Occupancy % (units with active confirmed stay today / total units)
+
+DashboardService::charts() → JSON for Chart.js:
+  - 6-month booking + revenue trend
+  - Status doughnut (confirmed vs cancelled)
+  - Top 5 hotels by bookings
+  - Top 5 cities by hotel count</pre>
+
+<h3>5.8 Activity log</h3>
+<ul>
+  <li><strong>Automatic:</strong> Spatie <code>LogsActivity</code> on all <code>AppModel</code> children</li>
+  <li><strong>Manual:</strong> <code>ActivityLogger</code> on web/API login and logout</li>
+  <li><strong>UI:</strong> <code>GET /activity</code> — paginated log with filters</li>
+</ul>
+
+<hr>
+
+<h2>6. API Endpoints Summary</h2>
+<table>
+  <thead><tr><th>Method</th><th>Endpoint</th><th>Auth</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td>POST</td><td><code>/api/login</code></td><td>public</td><td>Returns { token, user }</td></tr>
+    <tr><td>POST</td><td><code>/api/logout</code></td><td>token</td><td>Revoke token (204)</td></tr>
+    <tr><td>GET</td><td><code>/api/hotels</code></td><td>public</td><td>Paginated list</td></tr>
+    <tr><td>POST</td><td><code>/api/hotels</code></td><td>token</td><td>Create hotel (201)</td></tr>
+    <tr><td>POST</td><td><code>/api/rooms</code></td><td>token</td><td>Create room type + units (201)</td></tr>
+    <tr><td>GET</td><td><code>/api/search</code></td><td>public</td><td>Availability search</td></tr>
+    <tr><td>GET</td><td><code>/api/room-types/{id}/available-units</code></td><td>public</td><td>Free units for dates</td></tr>
+    <tr><td>GET</td><td><code>/api/bookings</code></td><td>token</td><td>Paginated bookings</td></tr>
+    <tr><td>POST</td><td><code>/api/bookings</code></td><td>token</td><td>Create booking (201)</td></tr>
+    <tr><td>DELETE</td><td><code>/api/bookings/{id}</code></td><td>token</td><td>Cancel booking (204)</td></tr>
+  </tbody>
+</table>
+<p><strong>Rate limits:</strong> API group 60/min · login 10/min · search 30/min</p>
+
+<hr>
+
+<h2>7. Web Pages Summary</h2>
+<table>
+  <thead><tr><th>Route</th><th>Page</th></tr></thead>
+  <tbody>
+    <tr><td><code>/login</code></td><td>Split-screen login with password toggle</td></tr>
+    <tr><td><code>/dashboard</code></td><td>Stats tiles + Chart.js charts</td></tr>
+    <tr><td><code>/hotels</code></td><td>List, filters, create/edit modal, show detail</td></tr>
+    <tr><td><code>/rooms</code></td><td>Room types list, create/edit, show detail</td></tr>
+    <tr><td><code>/bookings</code></td><td>Booking list, create form, show detail</td></tr>
+    <tr><td><code>/search</code></td><td>Date-aware availability search + results</td></tr>
+    <tr><td><code>/activity</code></td><td>Audit log viewer</td></tr>
+  </tbody>
+</table>
+
+<hr>
+
+<h2>8. Running the Project</h2>
+
+<h3>Local (SQLite + Redis)</h3>
+<pre>composer install &amp;&amp; cp .env.example .env
+php artisan key:generate &amp;&amp; php artisan migrate:fresh --seed
+php artisan serve   # http://127.0.0.1:8000</pre>
+<p>Windows: <code>.\run-local.ps1 up</code></p>
+
+<h3>Docker (Laravel Sail)</h3>
+<pre># merge .env.docker.example into .env
+.\sail.ps1 build &amp;&amp; .\sail.ps1 setup   # Windows
+# http://localhost:8080/login</pre>
+
+<h3>Tests</h3>
+<pre>php artisan test          # 44 tests, SQLite in-memory
+.\sail.ps1 test           # same suite inside container</pre>
+
+<hr>
+
+<h2>9. Test Coverage Map</h2>
+<table>
+  <thead><tr><th>Test file</th><th>What it verifies</th></tr></thead>
+  <tbody>
+    <tr><td><code>AvailabilityTest</code> (unit)</td><td>Overlap logic, checkout-day-free rule</td></tr>
+    <tr><td><code>SearchAvailabilityTest</code></td><td>Search results, pricing, guest filter</td></tr>
+    <tr><td><code>BookingTest</code></td><td>Create, 422 when full, cache invalidation, cancel</td></tr>
+    <tr><td><code>AuthTest</code></td><td>Web session + API token flows</td></tr>
+    <tr><td><code>InventoryTest</code></td><td>Delete guards, API city filter</td></tr>
+    <tr><td><code>AuditAndSoftDeleteTest</code></td><td>UUID, audit columns, soft delete</td></tr>
+    <tr><td><code>ActivityLogTest</code></td><td>Spatie logging on CRUD + auth</td></tr>
+    <tr><td><code>ViewPagesTest</code></td><td>Show pages, dashboard charts, auth gate</td></tr>
+  </tbody>
+</table>
+
+<hr>
+
+<h2>10. File Quick Reference</h2>
+<table>
+  <thead><tr><th>Concern</th><th>Primary files</th></tr></thead>
+  <tbody>
+    <tr><td>Search + cache</td><td><code>app/Services/SearchService.php</code>, <code>app/Services/Search/SearchResultCache.php</code></td></tr>
+    <tr><td>Booking logic</td><td><code>app/Services/BookingService.php</code></td></tr>
+    <tr><td>Availability query</td><td><code>app/Repositories/Eloquent/EloquentRoomUnitRepository.php</code></td></tr>
+    <tr><td>API errors</td><td><code>app/Exceptions/ApiExceptionRenderer.php</code></td></tr>
+    <tr><td>Repo bindings</td><td><code>app/Providers/RepositoryServiceProvider.php</code></td></tr>
+    <tr><td>Sail Docker</td><td><code>compose.yaml</code>, <code>sail.ps1</code></td></tr>
+    <tr><td>Seed data</td><td><code>database/seeders/LocationSeeder.php</code>, <code>DatabaseSeeder.php</code></td></tr>
+  </tbody>
+</table>
+
+<p class="footer">Generated for TerraStay / hotel-booking-temp — Laravel 13 interview submission.</p>
+
+</body>
+</html>
